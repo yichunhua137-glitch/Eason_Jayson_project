@@ -1,0 +1,13 @@
+constructor
+constructor.exe
+*.o
+*.obj
+*.gcm
+gcm.cache/
+*.out
+*.zip
+*.swp
+*~
+.DS_Store
+.vscode/
+.idea/
