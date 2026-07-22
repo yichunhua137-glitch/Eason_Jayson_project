@@ -2,6 +2,12 @@ module board;
 
 Board::Board() {}
 
+Board::~Board() {
+    for (Residence *residence : residences) {
+        delete residence;
+    }
+}
+
 Tile &Board::getTile(int id) {
     return tiles[id];
 }
@@ -142,4 +148,114 @@ bool Board::canBuildRoad(int edgeId, Colour colour) const {
     }
 
     return false;
+}
+
+void Board::buildRoad(int edgeId, Colour colour) {
+    edges[edgeId].build(colour);
+}
+
+bool Board::canBuildResidence(int vertexId, Colour colour) const {
+    if (vertices[vertexId].hasResidence()) {
+        return false;
+    }
+
+    for (int neighbourId : vertexNeighbours[vertexId]) {
+        if (vertices[neighbourId].hasResidence()) {
+            return false;
+        }
+    }
+
+    for (int edgeId : vertexEdges[vertexId]) {
+        const Edge &edge = edges[edgeId];
+
+        if (edge.isBuilt() && edge.getOwner() == colour) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void Board::buildResidence(int vertexId, Colour colour) {
+    Residence *residence = new Residence{colour};
+
+    residences.push_back(residence);
+    vertices[vertexId].buildResidence(residence);
+}
+
+bool Board::canUpgradeResidence(int vertexId, Colour colour) const {
+    const Vertex &vertex = vertices[vertexId];
+    if (!vertex.hasResidence()) {
+        return false;
+    }
+
+    const Residence *residence = vertex.getResidence();
+
+    if (residence->getOwner() != colour) {
+        return false;
+    }
+
+    if (residence->getType() == ResidenceType::TOWER) {
+        return false;
+    }
+
+    return true;
+}
+
+void Board::upgradeResidence(int vertexId) {
+    vertices[vertexId].getResidence()->upgrade();
+}
+
+bool Board::canPlaceInitialResidence(int vertexId) const {
+    if (vertices[vertexId].hasResidence()) {
+        return false;
+    }
+
+    for (int neighbourId : vertexNeighbours[vertexId]) {
+        if (vertices[neighbourId].hasResidence()) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void Board::placeInitialResidence(int vertexId, Colour colour) {
+    buildResidence(vertexId, colour);
+}
+
+bool Board::canPlaceInitialRoad(
+    int edgeId,
+    int residenceVertexId
+) const {
+    if (edges[edgeId].isBuilt()) {
+        return false;
+    }
+
+    for (int vertexId : edgeVertices[edgeId]) {
+        if (vertexId == residenceVertexId) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void Board::placeInitialRoad(int edgeId, Colour colour) {
+    buildRoad(edgeId, colour);
+}
+
+std::vector<int> Board::getProducingTiles(int roll) const {
+    std::vector<int> result;
+
+    for (const Tile &tile : tiles) {
+        if (
+            tile.getNumber() == roll &&
+            !tile.hasGeeseOnTile()
+        ) {
+            result.push_back(tile.getId());
+        }
+    }
+
+    return result;
 }
