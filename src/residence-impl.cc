@@ -18,3 +18,14 @@ void Residence::upgrade() {
         type = ResidenceType::TOWER;
     }
 }
+
+int Residence::getProductionAmount() const{
+    if (type == ResidenceType::BASEMENT) {
+        return 1;
+    } else if (type == ResidenceType::HOUSE) {
+        return 2;
+    } else if (type == ResidenceType::TOWER) {
+        return 3;
+    }
+    return 0;
+}

@@ -27,8 +27,13 @@ export class Board {
     // Vertex -> Tiles
     std::vector<std::vector<int>> vertexTiles;
 
+    std::vector<Residence *> residences;
+
   public:
     Board();
+    ~Board();
+    Board(const Board &) = delete;
+    Board &operator=(const Board &) = delete;
 
     Tile &getTile(int id);
     Vertex &getVertex(int id);
@@ -60,4 +65,18 @@ export class Board {
     const std::vector<int> &getVerticesForTile(int tileId) const;
     const std::vector<int> &getTilesForVertex(int vertexId) const;
     bool canBuildRoad(int edgeId, Colour colour) const;
+    void buildRoad(int edgeId, Colour colour);
+
+    bool canBuildResidence(int vertexId, Colour colour) const;
+    void buildResidence(int vertexId, Colour colour);
+
+    bool canUpgradeResidence(int vertexId, Colour colour) const;
+    void upgradeResidence(int vertexId);
+
+    bool canPlaceInitialResidence(int vertexId) const;
+    void placeInitialResidence(int vertexId, Colour colour);
+
+    bool canPlaceInitialRoad(int edgeId, int residenceVertexId) const;
+    void placeInitialRoad(int edgeId, Colour colour);
+    std::vector<int> getProducingTiles(int roll) const;
 };
