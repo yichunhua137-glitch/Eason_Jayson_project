@@ -13,4 +13,4 @@ export class Residence{
     ResidenceType getType() const;
     void upgrade();
     int getProductionAmount() const;
-}
+};

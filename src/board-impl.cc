@@ -1,5 +1,7 @@
 module board;
 
+import residence;
+
 Board::Board() {}
 
 Board::~Board() {

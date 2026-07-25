@@ -5,7 +5,8 @@ export enum class ResourceType{
     ENERGY,
     GLASS,
     HEAT,
-    WIFI
+    WIFI,
+    PARK
 };
 
 export enum class Colour{
