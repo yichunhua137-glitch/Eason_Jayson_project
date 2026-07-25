@@ -1,5 +1,7 @@
 module board;
 
+import residence;
+
 Board::Board() {}
 
 Tile &Board::getTile(int id) {

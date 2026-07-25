@@ -12,4 +12,4 @@ export class Residence{
     Colour getOwner() const;
     ResidenceType getType() const;
     void upgrade();
-}
+};
