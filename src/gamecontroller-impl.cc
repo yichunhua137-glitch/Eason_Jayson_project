@@ -26,7 +26,8 @@ GameController::GameController()
           &yellowBuilder
       },
       currentTurn{0},
-      gameRunning{false}
+      gameRunning{false},
+      hasRolled{false}
 {
 }
 
@@ -36,6 +37,7 @@ Builder &GameController::getCurrentBuilder() {
 
 void GameController::nextTurn() {
     currentTurn = (currentTurn + 1) % 4;
+    hasRolled = false;
 }
 
 bool GameController::hasWinner() const {
@@ -74,6 +76,7 @@ bool GameController::handleTrade( Builder &other, ResourceType give, ResourceTyp
 void GameController::startNewGame() {
     currentTurn = 0;
     gameRunning = true;
+    hasRolled = false;
 
     for (int i = 0; i < 4; ++i) {
         builders[i]->setDice(loadedDice);
@@ -89,6 +92,22 @@ void GameController::processCommand(const std::string &command) {
 
     Builder &current = getCurrentBuilder();
 
+    if (!hasRolled &&
+    action != "load" &&
+    action != "fair" &&
+    action != "roll") {
+    cout << "Invalid command." << endl;
+    return;
+}
+
+    if (hasRolled &&
+    (action == "load" ||
+     action == "fair" ||
+     action == "roll")) {
+    cout << "Invalid command." << endl;
+    return;
+}
+
     if (action == "load") {
         current.setDice(loadedDice);
 
@@ -100,7 +119,13 @@ void GameController::processCommand(const std::string &command) {
 
     } else if (action == "roll") {
         int result = current.rollDice();
+
+        if (result == -1) {
+        gameRunning = false;
+        return;
+    }
         cout << "You rolled " << result << "." << endl;
+        hasRolled = true;
 
     } else if (action == "help") {
         cout << "Valid commands:\n"
