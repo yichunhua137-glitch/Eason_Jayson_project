@@ -26,7 +26,7 @@ export class GameController {
     int currentTurn;
     bool gameRunning;
     bool hasRolled;
-    
+
     Builder &getCurrentBuilder();
 
   public:
