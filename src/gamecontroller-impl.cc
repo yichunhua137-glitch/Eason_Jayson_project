@@ -2,12 +2,14 @@ module;
 
 #include <iostream>
 #include <sstream>
+#include <string>
 
 module gamecontroller;
 
-import types;
+import residence;
 
 using namespace std;
+
 
 GameController::GameController()
     : board{},

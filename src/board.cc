@@ -5,6 +5,7 @@ import types;
 import tile;
 import vertex;
 import edge;
+import residence;
 
 export class Board {
   private:
