@@ -13,6 +13,7 @@ int LoadedDice::roll() {
     while (true) {
         cout << "Input a roll between 2 and 12:"
              << endl;
+        cout << "> ";
 
         if (cin >> value) {
             cin.ignore(10000, '\n');

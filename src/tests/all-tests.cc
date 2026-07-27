@@ -369,6 +369,12 @@ void testBuilderAndDice(TestSuite &suite) {
             std::string::npos,
         "Loaded dice reports invalid input"
     );
+    suite.expect(
+        loadedOutput.str().find(
+            "Input a roll between 2 and 12:\n> "
+        ) != std::string::npos,
+        "Loaded dice prints an input prompt"
+    );
 
     std::istringstream eofInput{""};
     {
@@ -1421,6 +1427,11 @@ void testGameController(TestSuite &suite) {
         orderCorrect,
         "Initial basements use snake placement order"
     );
+    suite.expect(
+        placementText.find("basement?\n> ") !=
+            std::string::npos,
+        "Initial placement prints an input prompt"
+    );
 
     std::istringstream tenInput{"10\n"};
     {
@@ -1571,9 +1582,21 @@ void testGameController(TestSuite &suite) {
     );
     suite.expect(
         geeseText.find(
+            "Choose where to place the GEESE.\n> "
+        ) != std::string::npos,
+        "Geese placement prints an input prompt"
+    );
+    suite.expect(
+        geeseText.find(
             "Builder Blue can choose to steal from Red."
         ) != std::string::npos,
         "Geese lists eligible builders on the target tile"
+    );
+    suite.expect(
+        geeseText.find(
+            "Choose a builder to steal from.\n> "
+        ) != std::string::npos,
+        "Geese stealing prints an input prompt"
     );
     suite.expect(
         geeseText.find(

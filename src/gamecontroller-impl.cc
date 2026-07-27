@@ -152,6 +152,7 @@ bool GameController::performInitialPlacement() {
                  << colourName(builder.getColour())
                  << ", where do you want to build a basement?"
                  << endl;
+            cout << "> ";
 
             string line;
             if (!getline(cin, line)) {
@@ -289,6 +290,7 @@ bool GameController::handleGeese() {
     while (true) {
         cout << "Choose where to place the GEESE."
              << endl;
+        cout << "> ";
 
         string line;
         if (!getline(cin, line)) {
@@ -341,6 +343,7 @@ bool GameController::handleGeese() {
     while (victim == nullptr) {
         cout << "Choose a builder to steal from."
              << endl;
+        cout << "> ";
 
         string chosenColour;
         if (!getline(cin, chosenColour)) {
