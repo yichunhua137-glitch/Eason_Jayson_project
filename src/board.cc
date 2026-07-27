@@ -5,6 +5,13 @@ import types;
 import tile;
 import vertex;
 import edge;
+import residence;
+
+export struct Production {
+  Colour colour;
+  ResourceType type;
+  int amount;
+};
 
 export class Board {
   private:
@@ -79,4 +86,11 @@ export class Board {
     bool canPlaceInitialRoad(int edgeId, int residenceVertexId) const;
     void placeInitialRoad(int edgeId, Colour colour);
     std::vector<int> getProducingTiles(int roll) const;
+
+    void setupDefaultBoard();
+    std::vector<Production> getProduction(int roll) const;
+
+    int getGeeseTile() const;
+    bool canMoveGeeseTo(int tileId) const;
+    void moveGeeseTo(int tileId);
 };
