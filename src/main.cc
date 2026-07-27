@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <iostream>
+#include <sstream>
 #include <string>
 
 import boardsetupstrategy;
@@ -12,6 +13,7 @@ int main(int argc, char *argv[]) {
     string boardFilename;
 
     unsigned int seed = 1;
+    bool useRandomBoard = false;
 
     for (int i = 1; i < argc; ++i) {
         string option = argv[i];
@@ -22,9 +24,14 @@ int main(int argc, char *argv[]) {
                 return 1;
             }
 
-            seed = static_cast<unsigned int>(
-                stoi(argv[++i])
-            );
+            istringstream seedInput{argv[++i]};
+            string extra;
+
+            if (!(seedInput >> seed) ||
+                (seedInput >> extra)) {
+                cerr << "Invalid seed." << endl;
+                return 1;
+            }
         } else if (option == "-load") {
             if (i + 1 >= argc) {
                 cerr << "Missing load filename."
@@ -42,6 +49,7 @@ int main(int argc, char *argv[]) {
 
             boardFilename = argv[++i];
         } else if (option == "-random-board") {
+            useRandomBoard = true;
         } else {
             cerr << "Invalid command-line option."
                  << endl;
@@ -69,11 +77,21 @@ int main(int argc, char *argv[]) {
         }
 
         controller.startNewGame();
-    } else {
+    } else if (useRandomBoard) {
         RandomBoardSetup setup;
 
         if (!controller.setupBoard(setup)) {
             cerr << "Unable to create board."
+                 << endl;
+            return 1;
+        }
+
+        controller.startNewGame();
+    } else {
+        FileBoardSetup setup{"layout.txt"};
+
+        if (!controller.setupBoard(setup)) {
+            cerr << "Unable to load board."
                  << endl;
             return 1;
         }

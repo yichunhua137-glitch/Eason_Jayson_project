@@ -80,11 +80,28 @@ bool GameController::handleTrade( Builder &other, ResourceType give, ResourceTyp
 }
 
 void GameController::startNewGame() {
+    board.setupTopology();
+
+    int parkId = -1;
+
+    for (int tileId = 0; tileId < 19; ++tileId) {
+        if (board.getTile(tileId).getType() ==
+            ResourceType::PARK) {
+            parkId = tileId;
+            break;
+        }
+    }
+
+    if (parkId != -1) {
+        board.moveGeeseTo(parkId);
+    }
+
     currentTurn = 0;
     gameRunning = true;
     hasRolled = false;
 
     for (int i = 0; i < 4; ++i) {
+        builders[i]->reset();
         builders[i]->setDice(loadedDice);
     }
 }
@@ -97,6 +114,22 @@ void GameController::processCommand(const std::string &command) {
     input >> action;
 
     Builder &current = getCurrentBuilder();
+    string extra;
+
+    bool takesNoArguments =
+        action == "load" ||
+        action == "fair" ||
+        action == "roll" ||
+        action == "next" ||
+        action == "board" ||
+        action == "status" ||
+        action == "residences" ||
+        action == "help";
+
+    if (takesNoArguments && (input >> extra)) {
+        cout << "Invalid command." << endl;
+        return;
+    }
 
     if (!hasRolled &&
     action != "load" &&
@@ -141,7 +174,8 @@ void GameController::processCommand(const std::string &command) {
     } else if (action == "save") {
         string filename;
 
-        if (!(input >> filename)) {
+        if (!(input >> filename) ||
+            (input >> extra)) {
             cout << "Invalid command." << endl;
             return;
         }
@@ -169,7 +203,8 @@ void GameController::processCommand(const std::string &command) {
     } else if (action == "build-road") {
         int edgeId;
 
-        if (!(input >> edgeId)) {
+        if (!(input >> edgeId) ||
+            (input >> extra)) {
             cout << "Invalid command." << endl;
         } else if (edgeId < 0 || edgeId >= 72) {
             cout << "You cannot build here." << endl;
@@ -189,7 +224,8 @@ void GameController::processCommand(const std::string &command) {
     } else if (action == "build-res") {
         int vertexId;
 
-        if (!(input >> vertexId)) {
+        if (!(input >> vertexId) ||
+            (input >> extra)) {
             cout << "Invalid command." << endl;
         } else if (vertexId < 0 || vertexId >= 54) {
             cout << "You cannot build here." << endl;
@@ -219,7 +255,8 @@ void GameController::processCommand(const std::string &command) {
     } else if (action == "improve") {
         int vertexId;
 
-        if (!(input >> vertexId)) {
+        if (!(input >> vertexId) ||
+            (input >> extra)) {
             cout << "Invalid command." << endl;
         } else if (vertexId < 0 || vertexId >= 54) {
             cout << "You cannot build here." << endl;
@@ -290,8 +327,9 @@ void GameController::processCommand(const std::string &command) {
 
     } else if (action == "status") {
         for (int i = 0; i < 4; ++i) {
-        printBuilderStatus(*builders[i]);
+            printBuilderStatus(*builders[i]);
         }
+
     } else if (action == "residences") {
         string colourName;
 
@@ -347,7 +385,8 @@ void GameController::processCommand(const std::string &command) {
 
         if (!(input >> colourText
                     >> giveText
-                    >> takeText)) {
+                    >> takeText) ||
+            (input >> extra)) {
             cout << "Invalid command." << endl;
             return;
         }
@@ -463,6 +502,31 @@ void GameController::run() {
 
     while (gameRunning) {
         if (hasWinner()) {
+            cout << "Would you like to play again?"
+                 << endl;
+            cout << "> ";
+
+            string response;
+
+            if (!getline(cin, response)) {
+                gameStateIO.save("backup.sv");
+                gameRunning = false;
+                return;
+            }
+
+            if (response == "yes") {
+                startNewGame();
+                showTurnStart = true;
+                continue;
+            }
+
+            if (response == "no") {
+                gameRunning = false;
+                return;
+            }
+
+            cout << "Invalid command." << endl;
+            continue;
         }
 
         if (showTurnStart) {

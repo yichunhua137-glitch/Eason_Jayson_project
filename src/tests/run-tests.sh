@@ -37,3 +37,38 @@ for test in board-smoke.cc all-tests.cc; do
     echo "==> $executable"
     "./$executable"
 done
+
+"$cxx" "${flags[@]}" -c "$src_dir/main.cc"
+"$cxx" "${flags[@]}" ./*.o -o constructor-cli
+
+for _ in {1..19}; do
+    printf '4 12 ' >> layout.txt
+done
+printf '\n' >> layout.txt
+
+default_output="$(./constructor-cli </dev/null)"
+if [[ "$default_output" != *"Builder Blue's turn."* ]] ||
+   [[ "$default_output" == *"BRICK"* ]]; then
+    echo "default layout.txt test failed" >&2
+    exit 1
+fi
+
+random_output="$(./constructor-cli -seed 1 -random-board </dev/null)"
+if [[ "$random_output" != *"Builder Blue's turn."* ]] ||
+   [[ "$random_output" != *"BRICK"* ]]; then
+    echo "-random-board test failed" >&2
+    exit 1
+fi
+
+if ./constructor-cli -seed invalid > seed-output.txt 2>&1; then
+    echo "invalid -seed test failed" >&2
+    exit 1
+fi
+if ! grep -q "Invalid seed." seed-output.txt; then
+    echo "invalid -seed message test failed" >&2
+    exit 1
+fi
+
+rm -f backup.sv layout.txt seed-output.txt
+echo "==> command-line"
+echo "command-line tests passed"

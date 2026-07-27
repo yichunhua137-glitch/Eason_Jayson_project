@@ -275,6 +275,28 @@ void testBuilderAndDice(TestSuite &suite) {
         "Builder adds positive points"
     );
 
+    builder.reset();
+
+    for (int resource = 0; resource < 5; ++resource) {
+        suite.expectEqual(
+            builder.getResource(
+                static_cast<ResourceType>(resource)
+            ),
+            0,
+            "Builder reset clears resources"
+        );
+    }
+    suite.expectEqual(
+        builder.buildingPoints(),
+        0,
+        "Builder reset clears building points"
+    );
+    suite.expectEqual(
+        builder.rollDice(),
+        12,
+        "Builder reset preserves the selected dice"
+    );
+
     std::srand(12345);
     FairDice fair;
     for (int i = 0; i < 1000; ++i) {
@@ -907,6 +929,11 @@ void testGameStateIO(TestSuite &suite) {
         loadedTurn
     };
 
+    loadedBlue.addResource(ResourceType::BRICK, 9);
+    loadedRed.addResource(ResourceType::GLASS, 9);
+    loadedBlue.addBuildingPoints(5);
+    loadedRed.addBuildingPoints(4);
+
     suite.expect(loaded.load(saveFile), "Game state loads");
     suite.expectEqual(loadedTurn, 3, "Load restores saved turn");
     suite.expectEqual(
@@ -1074,6 +1101,11 @@ void testGameController(TestSuite &suite) {
         controller.processCommand("build-road");
         controller.processCommand("build-road 72");
         controller.processCommand("trade Purple BRICK WIFI");
+        controller.processCommand("status extra");
+        controller.processCommand("build-road 0 extra");
+        controller.processCommand(
+            "trade Red BRICK WIFI extra"
+        );
     }
     suite.expect(
         invalidOutput.str().find("Invalid command.") !=
@@ -1084,6 +1116,11 @@ void testGameController(TestSuite &suite) {
         invalidOutput.str().find("You cannot build here.") !=
             std::string::npos,
         "Controller rejects out-of-range building location"
+    );
+    suite.expect(
+        invalidOutput.str().find("Blue has") ==
+            std::string::npos,
+        "Controller rejects extra command arguments"
     );
 
     std::ostringstream helpOutput;
@@ -1116,6 +1153,132 @@ void testGameController(TestSuite &suite) {
             std::string::npos,
         "Next turn returns to pre-roll phase"
     );
+
+    std::ostringstream extraRollOutput;
+    {
+        StreamRedirect outputRedirect{
+            std::cout,
+            extraRollOutput.rdbuf()
+        };
+        controller.processCommand("roll extra");
+    }
+    suite.expect(
+        extraRollOutput.str().find("Invalid command.") !=
+            std::string::npos &&
+            extraRollOutput.str().find("Input a roll") ==
+                std::string::npos,
+        "Controller rejects arguments after roll"
+    );
+
+    GameController runController;
+    RandomBoardSetup randomSetup;
+    suite.expect(
+        runController.setupBoard(randomSetup),
+        "Controller configures a board before running"
+    );
+    runController.startNewGame();
+
+    std::istringstream endOfInput;
+    std::ostringstream turnStartOutput;
+    {
+        StreamRedirect inputRedirect{
+            std::cin,
+            endOfInput.rdbuf()
+        };
+        StreamRedirect outputRedirect{
+            std::cout,
+            turnStartOutput.rdbuf()
+        };
+        runController.run();
+    }
+    suite.expect(
+        turnStartOutput.str().find("Builder Blue's turn.") !=
+            std::string::npos,
+        "Run prints the current builder at turn start"
+    );
+    suite.expect(
+        turnStartOutput.str().find(
+            "Blue has 0 building points"
+        ) != std::string::npos,
+        "Run prints the current builder status at turn start"
+    );
+    suite.expect(
+        turnStartOutput.str().find("| 0|--") !=
+            std::string::npos,
+        "Run prints the board at turn start"
+    );
+    std::remove("backup.sv");
+
+    FixedDice winnerDice{6};
+    Builder winnerBlue{Colour::BLUE, winnerDice};
+    Builder winnerRed{Colour::RED, winnerDice};
+    Builder winnerOrange{Colour::ORANGE, winnerDice};
+    Builder winnerYellow{Colour::YELLOW, winnerDice};
+    Builder *winnerBuilders[4] = {
+        &winnerBlue,
+        &winnerRed,
+        &winnerOrange,
+        &winnerYellow
+    };
+    Board winnerBoard;
+    winnerBoard.setupDefaultBoard();
+
+    int towerVertices[3] = {0, 2, 4};
+    for (int vertexId : towerVertices) {
+        winnerBoard.buildResidence(vertexId, Colour::BLUE);
+        winnerBoard.upgradeResidence(vertexId);
+        winnerBoard.upgradeResidence(vertexId);
+    }
+    winnerBoard.buildResidence(6, Colour::BLUE);
+
+    int winnerTurn = 3;
+    GameStateIO winnerState{
+        winnerBoard,
+        winnerBuilders,
+        winnerTurn
+    };
+    const std::string winnerFile = "test-winner.sv";
+    suite.expect(
+        winnerState.save(winnerFile),
+        "Winning game state saves"
+    );
+
+    GameController winnerController;
+    suite.expect(
+        winnerController.loadGame(winnerFile),
+        "Controller loads a winning game"
+    );
+    suite.expect(
+        winnerController.hasWinner(),
+        "Loaded ten-point builder is a winner"
+    );
+
+    std::istringstream declineReplay{"no\n"};
+    std::ostringstream winnerOutput;
+    {
+        StreamRedirect inputRedirect{
+            std::cin,
+            declineReplay.rdbuf()
+        };
+        StreamRedirect outputRedirect{
+            std::cout,
+            winnerOutput.rdbuf()
+        };
+        winnerController.run();
+    }
+    suite.expect(
+        winnerOutput.str().find(
+            "Would you like to play again?"
+        ) != std::string::npos,
+        "Run prompts after a builder wins"
+    );
+
+    winnerController.startNewGame();
+    suite.expect(
+        !winnerController.hasWinner(),
+        "Starting a new game resets building points"
+    );
+    std::remove(winnerFile.c_str());
 }
 
 } // namespace
