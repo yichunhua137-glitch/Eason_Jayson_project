@@ -603,6 +603,16 @@ void testBoardSetup(TestSuite &suite) {
         fileBoard.getTile(18).getType() == ResourceType::PARK,
         "File layout accepts PARK"
     );
+    suite.expectEqual(
+        fileBoard.getVerticesForEdge(0).size(),
+        std::size_t{2},
+        "File layout builds Figure 3 edge topology"
+    );
+    suite.expectEqual(
+        fileBoard.getVerticesForTile(0).size(),
+        std::size_t{6},
+        "File layout builds Figure 3 tile topology"
+    );
 
     Board missingBoard;
     FileBoardSetup missing{"does-not-exist.layout"};
@@ -672,6 +682,31 @@ void testBoardSetup(TestSuite &suite) {
         randomBoard.getTile(parkId).getNumber(),
         7,
         "PARK stays paired with value 7"
+    );
+    suite.expectEqual(
+        randomBoard.getVerticesForEdge(71).size(),
+        std::size_t{2},
+        "Random layout builds Figure 3 edge topology"
+    );
+    suite.expectEqual(
+        randomBoard.getVerticesForTile(18).size(),
+        std::size_t{6},
+        "Random layout builds Figure 3 tile topology"
+    );
+
+    randomBoard.placeInitialResidence(0, Colour::BLUE);
+    randomBoard.placeInitialRoad(0, Colour::BLUE);
+    suite.expect(
+        random.configure(randomBoard),
+        "Random layout can reset an existing game"
+    );
+    suite.expect(
+        !randomBoard.getVertex(0).hasResidence(),
+        "Board reconfiguration clears old residences"
+    );
+    suite.expect(
+        !randomBoard.getEdge(0).isBuilt(),
+        "Board reconfiguration clears old roads"
     );
 
     std::remove(validFile.c_str());

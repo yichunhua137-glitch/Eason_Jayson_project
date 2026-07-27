@@ -209,8 +209,7 @@ bool GameStateIO::load(const string &filename) {
         return false;
     }
 
-    board.initializeVertices(54);
-    board.initializeEdges(72);
+    board.clear();
 
     for (int tileId = 0;
          tileId < 19;
@@ -221,6 +220,8 @@ bool GameStateIO::load(const string &filename) {
             tileValues[tileId]
         );
     }
+
+    board.setupTopology();
 
     for (int builderIndex = 0;
          builderIndex < 4;

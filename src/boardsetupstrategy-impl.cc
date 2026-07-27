@@ -49,15 +49,21 @@ bool FileBoardSetup::configure(Board &board) {
         values[i] = value;
     }
 
+    board.clear();
+
     for (int i = 0; i < 19; ++i) {
         board.addTile(resourceTypes[i], values[i]);
     }
+
+    board.setupTopology();
 
     return true;
 }
 
 
 bool RandomBoardSetup::configure(Board &board) {
+    board.clear();
+
     ResourceType resourceTypes[19] = {
         ResourceType::BRICK,
         ResourceType::BRICK,
@@ -121,6 +127,8 @@ bool RandomBoardSetup::configure(Board &board) {
     for (int i = 0; i < 19; ++i) {
         board.addTile(resourceTypes[i], values[i]);
     }
+
+    board.setupTopology();
 
     return true;
 }

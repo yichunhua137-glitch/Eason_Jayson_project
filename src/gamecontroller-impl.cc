@@ -521,9 +521,6 @@ void GameController::run() {
 bool GameController::setupBoard(
     BoardSetupStrategy &strategy
 ) {
-    board.initializeVertices(54);
-    board.initializeEdges(72);
-
     return strategy.configure(board);
 }
 
