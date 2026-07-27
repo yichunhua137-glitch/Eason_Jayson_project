@@ -27,7 +27,12 @@ GameController::GameController()
       },
       currentTurn{0},
       gameRunning{false},
-      hasRolled{false}
+      hasRolled{false},
+      gameStateIO{
+          board,
+          builders,
+          currentTurn
+      }
 {
 }
 
@@ -121,12 +126,27 @@ void GameController::processCommand(const std::string &command) {
         int result = current.rollDice();
 
         if (result == -1) {
+        gameStateIO.save("backup.sv");
         gameRunning = false;
         return;
     }
         cout << "You rolled " << result << "." << endl;
         hasRolled = true;
 
+    } else if (action == "save") {
+        string filename;
+
+        if (!(input >> filename)) {
+            cout << "Invalid command." << endl;
+            return;
+        }
+
+        if (!gameStateIO.save(filename)) {
+            cerr << "Unable to save game." << endl;
+            return;
+        }
+
+        nextTurn();
     } else if (action == "help") {
         cout << "Valid commands:\n"
              << "board\n"
@@ -437,6 +457,7 @@ void GameController::processCommand(const std::string &command) {
         string response;
 
         if (!getline(cin, response)) {
+            gameStateIO.save("backup.sv");
             gameRunning = false;
             return;
         }

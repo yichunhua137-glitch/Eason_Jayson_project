@@ -8,6 +8,7 @@ import board;
 import builder;
 import dice;
 import types;
+import gamestateio;
 
 export class GameController {
   private:
@@ -26,7 +27,7 @@ export class GameController {
     int currentTurn;
     bool gameRunning;
     bool hasRolled;
-
+    GameStateIO gameStateIO;
     Builder &getCurrentBuilder();
 
   public:
