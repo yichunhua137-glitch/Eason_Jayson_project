@@ -37,6 +37,7 @@ export class GameController {
     void startNewGame();
     void processCommand(const std::string &command);
     void nextTurn();
+    bool loadGame(const std::string &filename);
 
     bool handleTrade(
         Builder &other,

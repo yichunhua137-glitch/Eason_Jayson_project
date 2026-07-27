@@ -517,3 +517,20 @@ void GameController::run() {
         processCommand(command);
     }
 }
+
+bool GameController::loadGame(
+    const string &filename
+) {
+    if (!gameStateIO.load(filename)) {
+        return false;
+    }
+
+    gameRunning = true;
+    hasRolled = false;
+
+    for (int i = 0; i < 4; ++i) {
+        builders[i]->setDice(loadedDice);
+    }
+
+    return true;
+}
