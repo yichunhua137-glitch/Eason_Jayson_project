@@ -297,6 +297,45 @@ void testBuilderAndDice(TestSuite &suite) {
         "Builder reset preserves the selected dice"
     );
 
+    Builder randomResourceBuilder{Colour::RED, two};
+    randomResourceBuilder.addResource(
+        ResourceType::BRICK,
+        2
+    );
+    randomResourceBuilder.addResource(
+        ResourceType::WIFI,
+        1
+    );
+    suite.expectEqual(
+        randomResourceBuilder.totalResources(),
+        3,
+        "Builder reports total resources"
+    );
+    ResourceType removed =
+        randomResourceBuilder.removeRandomResource();
+    suite.expect(
+        removed == ResourceType::BRICK ||
+            removed == ResourceType::WIFI,
+        "Random removal chooses an owned resource"
+    );
+    suite.expectEqual(
+        randomResourceBuilder.totalResources(),
+        2,
+        "Random removal removes exactly one resource"
+    );
+    randomResourceBuilder.addBuildingPoints(2);
+    randomResourceBuilder.reset();
+    suite.expectEqual(
+        randomResourceBuilder.totalResources(),
+        0,
+        "Builder reset clears resources"
+    );
+    suite.expectEqual(
+        randomResourceBuilder.buildingPoints(),
+        0,
+        "Builder reset clears building points"
+    );
+
     std::srand(12345);
     FairDice fair;
     for (int i = 0; i < 1000; ++i) {
@@ -972,6 +1011,17 @@ void testGameStateIO(TestSuite &suite) {
         5,
         "Load restores geese"
     );
+    int loadedGeeseCount = 0;
+    for (int tileId = 0; tileId < 19; ++tileId) {
+        if (loadedBoard.getTile(tileId).hasGeeseOnTile()) {
+            ++loadedGeeseCount;
+        }
+    }
+    suite.expectEqual(
+        loadedGeeseCount,
+        1,
+        "Load restores exactly one Geese location"
+    );
     suite.expectEqual(
         loadedBlue.buildingPoints(),
         1,
@@ -1176,7 +1226,22 @@ void testGameController(TestSuite &suite) {
         runController.setupBoard(randomSetup),
         "Controller configures a board before running"
     );
-    runController.startNewGame();
+
+    std::istringstream runPlacementInput{
+        "0\n2\n5\n6\n11\n18\n23\n52\n"
+    };
+    std::ostringstream runPlacementOutput;
+    {
+        StreamRedirect inputRedirect{
+            std::cin,
+            runPlacementInput.rdbuf()
+        };
+        StreamRedirect outputRedirect{
+            std::cout,
+            runPlacementOutput.rdbuf()
+        };
+        runController.startNewGame();
+    }
 
     std::istringstream endOfInput;
     std::ostringstream turnStartOutput;
@@ -1198,7 +1263,7 @@ void testGameController(TestSuite &suite) {
     );
     suite.expect(
         turnStartOutput.str().find(
-            "Blue has 0 building points"
+            "Blue has 2 building points"
         ) != std::string::npos,
         "Run prints the current builder status at turn start"
     );
@@ -1273,12 +1338,274 @@ void testGameController(TestSuite &suite) {
         "Run prompts after a builder wins"
     );
 
-    winnerController.startNewGame();
+    std::istringstream replayPlacementInput{
+        "0\n2\n5\n6\n11\n18\n23\n52\n"
+    };
+    std::ostringstream replayPlacementOutput;
+    {
+        StreamRedirect inputRedirect{
+            std::cin,
+            replayPlacementInput.rdbuf()
+        };
+        StreamRedirect outputRedirect{
+            std::cout,
+            replayPlacementOutput.rdbuf()
+        };
+        winnerController.startNewGame();
+    }
     suite.expect(
         !winnerController.hasWinner(),
         "Starting a new game resets building points"
     );
     std::remove(winnerFile.c_str());
+
+    const std::string layoutFile =
+        "test-shared-layout.tmp";
+    {
+        std::ofstream layout{layoutFile};
+        for (int tileId = 0; tileId < 18; ++tileId) {
+            layout << "0 2 ";
+        }
+        layout << "5 7\n";
+    }
+
+    GameController initialController;
+    FileBoardSetup initialSetup{layoutFile};
+    suite.expect(
+        initialController.setupBoard(initialSetup),
+        "Shared test configures deterministic board"
+    );
+
+    std::istringstream placementInput{
+        "0\n2\n5\n6\n11\n18\n23\n52\n"
+    };
+    std::ostringstream placementOutput;
+    {
+        StreamRedirect inputRedirect{
+            std::cin,
+            placementInput.rdbuf()
+        };
+        StreamRedirect outputRedirect{
+            std::cout,
+            placementOutput.rdbuf()
+        };
+        initialController.startNewGame();
+    }
+
+    const std::string prompt =
+        ", where do you want to build a basement?";
+    const std::string placementText =
+        placementOutput.str();
+    std::size_t searchFrom = 0;
+    const std::string expectedOrder[8] = {
+        "Builder Blue" + prompt,
+        "Builder Red" + prompt,
+        "Builder Orange" + prompt,
+        "Builder Yellow" + prompt,
+        "Builder Yellow" + prompt,
+        "Builder Orange" + prompt,
+        "Builder Red" + prompt,
+        "Builder Blue" + prompt
+    };
+    bool orderCorrect = true;
+    for (const std::string &expected : expectedOrder) {
+        std::size_t found =
+            placementText.find(expected, searchFrom);
+        if (found == std::string::npos) {
+            orderCorrect = false;
+            break;
+        }
+        searchFrom = found + expected.size();
+    }
+    suite.expect(
+        orderCorrect,
+        "Initial basements use snake placement order"
+    );
+
+    std::istringstream tenInput{"10\n"};
+    {
+        StreamRedirect inputRedirect{
+            std::cin,
+            tenInput.rdbuf()
+        };
+        std::ostringstream ignoredOutput;
+        StreamRedirect outputRedirect{
+            std::cout,
+            ignoredOutput.rdbuf()
+        };
+        initialController.processCommand("roll");
+    }
+
+    std::ostringstream initialStatus;
+    {
+        StreamRedirect outputRedirect{
+            std::cout,
+            initialStatus.rdbuf()
+        };
+        initialController.processCommand("status");
+    }
+    for (const char *colour :
+         {"Blue", "Red", "Orange", "Yellow"}) {
+        suite.expect(
+            initialStatus.str().find(
+                std::string{colour} +
+                    " has 2 building points"
+            ) != std::string::npos,
+            "Each builder receives points for two initial basements"
+        );
+    }
+
+    const std::string initialSaveFile =
+        "test-initial-placement.sv";
+    initialController.processCommand(
+        "save " + initialSaveFile
+    );
+
+    std::ifstream initialSave{initialSaveFile};
+    std::string savedLine;
+    std::getline(initialSave, savedLine);
+    std::string builderLines[4];
+    for (std::string &line : builderLines) {
+        std::getline(initialSave, line);
+    }
+    initialSave.close();
+
+    const int expectedInitialResources[4] = {
+        0, 2, 2, 1
+    };
+    for (int builderIndex = 0;
+         builderIndex < 4;
+         ++builderIndex) {
+        std::istringstream builderLine{
+            builderLines[builderIndex]
+        };
+        int resources[5];
+        for (int &resource : resources) {
+            builderLine >> resource;
+        }
+
+        suite.expectEqual(
+            resources[0],
+            expectedInitialResources[builderIndex],
+            "Second basement grants adjacent BRICK resources"
+        );
+        suite.expectEqual(
+            resources[1] + resources[2] +
+                resources[3] + resources[4],
+            0,
+            "Initial resources use actual adjacent tile types"
+        );
+
+        char marker;
+        builderLine >> marker;
+        std::string token;
+        while (builderLine >> token && token != "h") {
+        }
+
+        int residenceCount = 0;
+        int vertexId;
+        char residenceType;
+        while (builderLine >> vertexId >> residenceType) {
+            ++residenceCount;
+            suite.expect(
+                residenceType == 'B',
+                "Initial residences are basements"
+            );
+        }
+        suite.expectEqual(
+            residenceCount,
+            2,
+            "Each builder starts with two basements"
+        );
+    }
+
+    const std::string geeseSaveFile =
+        "test-geese-input.sv";
+    {
+        std::ofstream geeseSave{geeseSaveFile};
+        geeseSave << "0\n";
+        geeseSave << "0 0 0 0 0 r h\n";
+        geeseSave << "10 0 0 0 0 r h 0 B\n";
+        geeseSave << "0 0 0 0 0 r h\n";
+        geeseSave << "0 0 0 0 0 r h\n";
+        for (int tileId = 0; tileId < 18; ++tileId) {
+            geeseSave << "0 2 ";
+        }
+        geeseSave << "5 7\n";
+        geeseSave << "18\n";
+    }
+
+    GameController geeseController;
+    suite.expect(
+        geeseController.loadGame(geeseSaveFile),
+        "Shared test loads Geese scenario"
+    );
+
+    std::srand(9);
+    std::istringstream geeseInput{"7\n0\nRed\n"};
+    std::ostringstream geeseOutput;
+    {
+        StreamRedirect inputRedirect{
+            std::cin,
+            geeseInput.rdbuf()
+        };
+        StreamRedirect outputRedirect{
+            std::cout,
+            geeseOutput.rdbuf()
+        };
+        geeseController.processCommand("roll");
+    }
+
+    std::string geeseText = geeseOutput.str();
+    suite.expect(
+        geeseText.find(
+            "Builder Red loses 5 resources to the geese."
+        ) != std::string::npos,
+        "Roll 7 makes builders with 10 resources lose half"
+    );
+    suite.expect(
+        geeseText.find(
+            "Choose where to place the GEESE."
+        ) != std::string::npos,
+        "Roll 7 prompts for a new Geese tile"
+    );
+    suite.expect(
+        geeseText.find(
+            "Builder Blue can choose to steal from Red."
+        ) != std::string::npos,
+        "Geese lists eligible builders on the target tile"
+    );
+    suite.expect(
+        geeseText.find(
+            "Builder Blue steals BRICK from builder Red."
+        ) != std::string::npos,
+        "Current builder steals a weighted random resource"
+    );
+
+    std::ostringstream geeseStatus;
+    {
+        StreamRedirect outputRedirect{
+            std::cout,
+            geeseStatus.rdbuf()
+        };
+        geeseController.processCommand("status");
+    }
+    suite.expect(
+        geeseStatus.str().find(
+            "Blue has 0 building points, 1 brick"
+        ) != std::string::npos,
+        "Stolen resource is added to current builder"
+    );
+    suite.expect(
+        geeseStatus.str().find(
+            "Red has 1 building points, 4 brick"
+        ) != std::string::npos,
+        "Discard and steal remove resources from victim"
+    );
+
+    std::remove(layoutFile.c_str());
+    std::remove(initialSaveFile.c_str());
+    std::remove(geeseSaveFile.c_str());
 }
 
 } // namespace

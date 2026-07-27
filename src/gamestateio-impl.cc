@@ -310,8 +310,9 @@ bool GameStateIO::load(const string &filename) {
         }
     }
 
-    board.getTile(geeseId)
-        .placeGeese();
+    if (board.getGeeseTile() != geeseId) {
+        board.moveGeeseTo(geeseId);
+    }
 
     currentTurn = loadedTurn;
 

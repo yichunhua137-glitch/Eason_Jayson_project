@@ -1,3 +1,7 @@
+module;
+
+#include <cstdlib>
+
 module builder;
 
 Builder::Builder(Colour colour, Dice &initialDice)
@@ -69,6 +73,46 @@ bool Builder::removeResource(ResourceType type, int amount) {
     return true;
 }
 
+int Builder::totalResources() const {
+    return brick + energy + glass + heat + wifi;
+}
+
+ResourceType Builder::removeRandomResource() {
+    int total = totalResources();
+
+    if (total == 0) {
+        return ResourceType::PARK;
+    }
+
+    int chosen = rand() % total;
+
+    for (int resourceIndex = 0;
+         resourceIndex < 5;
+         ++resourceIndex) {
+        ResourceType type =
+            static_cast<ResourceType>(resourceIndex);
+        int amount = getResource(type);
+
+        if (chosen < amount) {
+            removeResource(type, 1);
+            return type;
+        }
+
+        chosen -= amount;
+    }
+
+    return ResourceType::PARK;
+}
+
+void Builder::reset() {
+    brick = 0;
+    energy = 0;
+    glass = 0;
+    heat = 0;
+    wifi = 0;
+    points = 0;
+}
+
 bool Builder::canAffordRoad() const {
     return heat >= 1 && wifi >= 1;
 }
@@ -110,15 +154,3 @@ void Builder::addBuildingPoints(int amount) {
         points += amount;
     }
 }
-
-void Builder::reset() {
-    brick = 0;
-    energy = 0;
-    glass = 0;
-    heat = 0;
-    wifi = 0;
-    points = 0;
-}
-
-
-

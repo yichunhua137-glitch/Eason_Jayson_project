@@ -46,14 +46,22 @@ for _ in {1..19}; do
 done
 printf '\n' >> layout.txt
 
-default_output="$(./constructor-cli </dev/null)"
+placement_input=$'0\n2\n5\n6\n11\n18\n23\n52\n'
+
+default_output="$(
+    printf '%s' "$placement_input" |
+        ./constructor-cli
+)"
 if [[ "$default_output" != *"Builder Blue's turn."* ]] ||
    [[ "$default_output" == *"BRICK"* ]]; then
     echo "default layout.txt test failed" >&2
     exit 1
 fi
 
-random_output="$(./constructor-cli -seed 1 -random-board </dev/null)"
+random_output="$(
+    printf '%s' "$placement_input" |
+        ./constructor-cli -seed 1 -random-board
+)"
 if [[ "$random_output" != *"Builder Blue's turn."* ]] ||
    [[ "$random_output" != *"BRICK"* ]]; then
     echo "-random-board test failed" >&2

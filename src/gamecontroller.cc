@@ -1,6 +1,7 @@
 module;
 
 #include <string>
+#include <vector>
 
 export module gamecontroller;
 
@@ -33,7 +34,16 @@ export class GameController {
     void distributeResources(int roll);
     void printBuilderStatus(const Builder &builder) const;
     void printTurnStart() const;
-
+    bool performInitialPlacement();
+    void grantInitialResources(
+        Builder &builder,
+        int vertexId
+    );
+    bool handleGeese();
+    void discardResourcesForGeese();
+    std::vector<Builder *> getStealableBuilders(
+        int tileId
+    );
 
   public:
     GameController();
