@@ -472,3 +472,48 @@ void GameController::processCommand(const std::string &command) {
         cout << "Invalid command." << endl;
     }
 }
+
+void GameController::run() {
+    gameRunning = true;
+
+    while (gameRunning) {
+        if (hasWinner()) {
+            cout << "Would you like to play again?"
+                 << endl;
+            cout << "> ";
+
+            string response;
+
+            if (!getline(cin, response)) {
+                gameStateIO.save("backup.sv");
+                gameRunning = false;
+                return;
+            }
+
+            if (response == "yes") {
+                startNewGame();
+                continue;
+            }
+
+            if (response == "no") {
+                gameRunning = false;
+                return;
+            }
+
+            cout << "Invalid command." << endl;
+            continue;
+        }
+
+        cout << "> ";
+
+        string command;
+
+        if (!getline(cin, command)) {
+            gameStateIO.save("backup.sv");
+            gameRunning = false;
+            return;
+        }
+
+        processCommand(command);
+    }
+}
