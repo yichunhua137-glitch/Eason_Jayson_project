@@ -11,3 +11,4 @@ gcm.cache/
 .DS_Store
 .vscode/
 .idea/
+src/tests/build/
