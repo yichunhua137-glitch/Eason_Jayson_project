@@ -7,6 +7,7 @@ module;
 module gamecontroller;
 
 import residence;
+import textdisplay;
 
 using namespace std;
 
@@ -131,6 +132,10 @@ void GameController::processCommand(const std::string &command) {
         return;
     }
         cout << "You rolled " << result << "." << endl;
+
+        if (result != 7) {
+        distributeResources(result);
+    }
         hasRolled = true;
 
     } else if (action == "save") {
@@ -356,7 +361,10 @@ void GameController::processCommand(const std::string &command) {
             }
         }
 
-    } else if (action == "trade") {
+    } else if (action == "board") {
+        cout << TextDisplay{board};
+
+    }else if (action == "trade") {
         string colourText;
         string giveText;
         string takeText;
@@ -518,18 +526,13 @@ void GameController::run() {
     }
 }
 
-bool GameController::setupBoard(
-    BoardSetupStrategy &strategy
-) {
-    board.initializeVertices(54);
-    board.initializeEdges(72);
+bool GameController::setupBoard(BoardSetupStrategy &strategy) {
+    board.setupDefaultBoard();
 
     return strategy.configure(board);
 }
 
-bool GameController::loadGame(
-    const string &filename
-) {
+bool GameController::loadGame(const string &filename) {
     if (!gameStateIO.load(filename)) {
         return false;
     }
@@ -542,4 +545,114 @@ bool GameController::loadGame(
     }
 
     return true;
+}
+
+void GameController::distributeResources(int roll) {
+    int gained[4][5] = {};
+
+    auto production =
+        board.getProduction(roll);
+
+    for (const Production &record :
+         production) {
+
+        int builderIndex = -1;
+
+        for (int i = 0; i < 4; ++i) {
+            if (builders[i]->getColour() ==
+                record.colour) {
+
+                builderIndex = i;
+                break;
+            }
+        }
+
+        int resourceIndex =
+            static_cast<int>(record.type);
+
+        if (builderIndex != -1 &&
+            resourceIndex >= 0 &&
+            resourceIndex < 5) {
+
+            builders[builderIndex]
+                ->addResource(
+                    record.type,
+                    record.amount
+                );
+
+            gained[builderIndex]
+                  [resourceIndex] +=
+                record.amount;
+        }
+    }
+
+    string colourNames[4] = {
+        "Blue",
+        "Red",
+        "Orange",
+        "Yellow"
+    };
+
+    string resourceNames[5] = {
+        "BRICK",
+        "ENERGY",
+        "GLASS",
+        "HEAT",
+        "WIFI"
+    };
+
+    bool anyoneGained = false;
+
+    for (int builderIndex = 0;
+         builderIndex < 4;
+         ++builderIndex) {
+
+        bool builderGained = false;
+
+        for (int resourceIndex = 0;
+             resourceIndex < 5;
+             ++resourceIndex) {
+
+            if (gained[builderIndex]
+                      [resourceIndex] > 0) {
+
+                builderGained = true;
+                break;
+            }
+        }
+
+        if (!builderGained) {
+            continue;
+        }
+
+        anyoneGained = true;
+
+        cout << "Builder "
+             << colourNames[builderIndex]
+             << " gained:"
+             << endl;
+
+        for (int resourceIndex = 0;
+             resourceIndex < 5;
+             ++resourceIndex) {
+
+            int amount =
+                gained[builderIndex]
+                      [resourceIndex];
+
+            if (amount > 0) {
+                cout << amount
+                     << " "
+                     << resourceNames[
+                            resourceIndex
+                        ]
+                     << endl;
+            }
+        }
+    }
+
+    if (!anyoneGained) {
+        cout << "No builders gained resources."
+             << endl;
+    }
 }

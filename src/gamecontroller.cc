@@ -30,6 +30,7 @@ export class GameController {
     bool hasRolled;
     GameStateIO gameStateIO;
     Builder &getCurrentBuilder();
+    void distributeResources(int roll);
 
   public:
     GameController();

@@ -119,7 +119,7 @@ bool RandomBoardSetup::configure(Board &board) {
     }
 
     for (int i = 0; i < 19; ++i) {
-        board.addTile(resourceTypes[i], values[i]);
+        board.setTile(i, resourceTypes[i], values[i]);
     }
 
     return true;

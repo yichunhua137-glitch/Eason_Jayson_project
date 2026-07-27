@@ -574,3 +574,16 @@ void Board::moveGeeseTo(int tileId) {
     
     tiles[tileId].placeGeese();
 }
+
+void Board::setTile(
+    int id,
+    ResourceType type,
+    int number
+) {
+    if (id < static_cast<int>(tiles.size())) {
+        tiles[id] = Tile{id, type, number};
+    } else if (id ==
+               static_cast<int>(tiles.size())) {
+        addTile(type, number);
+    }
+}

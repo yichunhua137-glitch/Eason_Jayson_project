@@ -7,6 +7,12 @@ import vertex;
 import edge;
 import residence;
 
+export struct Production {
+  Colour colour;
+  ResourceType type;
+  int amount;
+};
+
 export class Board {
   private:
     std::vector<Tile> tiles;
@@ -47,6 +53,7 @@ export class Board {
     void initializeVertices(int count);
     void initializeEdges(int count);
     void addTile(ResourceType type, int number);
+    void setTile(int id, ResourceType type, int number);
 
     void connectEdgeToVertices(
         int edgeId,

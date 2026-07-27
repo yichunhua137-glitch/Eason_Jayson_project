@@ -2,7 +2,6 @@ module;
 
 #include <cstdlib>
 #include <iostream>
-#include <limits>
 
 module dice;
 
@@ -12,9 +11,12 @@ int LoadedDice::roll() {
     int value;
 
     while (true) {
-        cout << "Input a roll between 2 and 12:" << endl;
+        cout << "Input a roll between 2 and 12:"
+             << endl;
 
         if (cin >> value) {
+            cin.ignore(10000, '\n');
+
             if (value >= 2 && value <= 12) {
                 return value;
             }
@@ -32,6 +34,7 @@ int LoadedDice::roll() {
         }
     }
 }
+
 
 int FairDice::roll() {
     int first = rand() % 6 + 1;
