@@ -7,12 +7,6 @@ import vertex;
 import edge;
 import residence;
 
-export struct Production {
-  Colour colour;
-  ResourceType type;
-  int amount;
-};
-
 export class Board {
   private:
     std::vector<Tile> tiles;
