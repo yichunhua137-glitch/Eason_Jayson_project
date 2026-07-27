@@ -111,7 +111,14 @@ void Builder::addBuildingPoints(int amount) {
     }
 }
 
-
+void Builder::reset() {
+    brick = 0;
+    energy = 0;
+    glass = 0;
+    heat = 0;
+    wifi = 0;
+    points = 0;
+}
 
 
 

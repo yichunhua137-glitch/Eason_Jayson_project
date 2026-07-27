@@ -225,6 +225,8 @@ bool GameStateIO::load(const string &filename) {
          builderIndex < 4;
          ++builderIndex) {
 
+        builders[builderIndex]->reset();
+
         istringstream builderInput{
             builderLines[builderIndex]
         };

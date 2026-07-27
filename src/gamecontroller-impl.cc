@@ -289,33 +289,9 @@ void GameController::processCommand(const std::string &command) {
         }
 
     } else if (action == "status") {
-        string colourNames[4] = {
-            "Blue",
-            "Red",
-            "Orange",
-            "Yellow"
-        };
-
         for (int i = 0; i < 4; ++i) {
-            Builder &builder = *builders[i];
-
-            cout << colourNames[i]
-                 << " has "
-                 << builder.buildingPoints()
-                 << " building points, "
-                 << builder.getResource(ResourceType::BRICK)
-                 << " brick, "
-                 << builder.getResource(ResourceType::ENERGY)
-                 << " energy, "
-                 << builder.getResource(ResourceType::GLASS)
-                 << " glass, "
-                 << builder.getResource(ResourceType::HEAT)
-                 << " heat, and "
-                 << builder.getResource(ResourceType::WIFI)
-                 << " WiFi."
-                 << endl;
+        printBuilderStatus(*builders[i]);
         }
-
     } else if (action == "residences") {
         string colourName;
 
@@ -483,33 +459,15 @@ void GameController::processCommand(const std::string &command) {
 
 void GameController::run() {
     gameRunning = true;
+    bool showTurnStart = true;
 
     while (gameRunning) {
         if (hasWinner()) {
-            cout << "Would you like to play again?"
-                 << endl;
-            cout << "> ";
+        }
 
-            string response;
-
-            if (!getline(cin, response)) {
-                gameStateIO.save("backup.sv");
-                gameRunning = false;
-                return;
-            }
-
-            if (response == "yes") {
-                startNewGame();
-                continue;
-            }
-
-            if (response == "no") {
-                gameRunning = false;
-                return;
-            }
-
-            cout << "Invalid command." << endl;
-            continue;
+        if (showTurnStart) {
+            printTurnStart();
+            showTurnStart = false;
         }
 
         cout << "> ";
@@ -522,13 +480,17 @@ void GameController::run() {
             return;
         }
 
+        int previousTurn = currentTurn;
+
         processCommand(command);
+
+        if (currentTurn != previousTurn) {
+            showTurnStart = true;
+        }
     }
 }
 
-bool GameController::setupBoard(
-    BoardSetupStrategy &strategy
-) {
+bool GameController::setupBoard(BoardSetupStrategy &strategy) {
     return strategy.configure(board);
 }
 
@@ -655,4 +617,52 @@ void GameController::distributeResources(int roll) {
         cout << "No builders gained resources."
              << endl;
     }
+}
+
+void GameController::printBuilderStatus(const Builder &builder) const {
+    string colourName;
+
+    if (builder.getColour() == Colour::BLUE) {
+        colourName = "Blue";
+    } else if (builder.getColour() == Colour::RED) {
+        colourName = "Red";
+    } else if (builder.getColour() == Colour::ORANGE) {
+        colourName = "Orange";
+    } else {
+        colourName = "Yellow";
+    }
+
+    cout << colourName
+         << " has "
+         << builder.buildingPoints()
+         << " building points, "
+         << builder.getResource(ResourceType::BRICK)
+         << " brick, "
+         << builder.getResource(ResourceType::ENERGY)
+         << " energy, "
+         << builder.getResource(ResourceType::GLASS)
+         << " glass, "
+         << builder.getResource(ResourceType::HEAT)
+         << " heat, and "
+         << builder.getResource(ResourceType::WIFI)
+         << " WiFi."
+         << endl;
+}
+
+void GameController::printTurnStart() const {
+    string colourNames[4] = {
+        "Blue",
+        "Red",
+        "Orange",
+        "Yellow"
+    };
+
+    cout << TextDisplay{board};
+
+    cout << "Builder "
+         << colourNames[currentTurn]
+         << "'s turn."
+         << endl;
+
+    printBuilderStatus(*builders[currentTurn]);
 }

@@ -31,6 +31,9 @@ export class GameController {
     GameStateIO gameStateIO;
     Builder &getCurrentBuilder();
     void distributeResources(int roll);
+    void printBuilderStatus(const Builder &builder) const;
+    void printTurnStart() const;
+
 
   public:
     GameController();

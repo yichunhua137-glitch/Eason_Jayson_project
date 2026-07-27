@@ -38,4 +38,5 @@ export class Builder {
 
     int buildingPoints() const;
     void addBuildingPoints(int amount);
+    void reset();
 };
