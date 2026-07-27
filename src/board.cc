@@ -80,4 +80,11 @@ export class Board {
     bool canPlaceInitialRoad(int edgeId, int residenceVertexId) const;
     void placeInitialRoad(int edgeId, Colour colour);
     std::vector<int> getProducingTiles(int roll) const;
+
+    void setupDefaultBoard();
+    std::vector<Production> getProduction(int roll) const;
+
+    int getGeeseTile() const;
+    bool canMoveGeeseTo(int tileId) const;
+    void moveGeeseTo(int tileId);
 };
