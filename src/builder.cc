@@ -29,6 +29,9 @@ export class Builder {
 
     void addResource(ResourceType type, int amount);
     bool removeResource(ResourceType type, int amount);
+    int totalResources() const;
+    ResourceType removeRandomResource();
+    void reset();
 
     bool canAffordRoad() const;
     bool canAffordResidence(ResidenceType type) const;

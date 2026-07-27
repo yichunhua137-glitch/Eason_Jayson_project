@@ -3,6 +3,7 @@ module;
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <vector>
 
 module gamecontroller;
 
@@ -10,6 +11,45 @@ import residence;
 import textdisplay;
 
 using namespace std;
+
+namespace {
+
+string colourName(Colour colour) {
+    if (colour == Colour::BLUE) {
+        return "Blue";
+    } else if (colour == Colour::RED) {
+        return "Red";
+    } else if (colour == Colour::ORANGE) {
+        return "Orange";
+    }
+
+    return "Yellow";
+}
+
+string resourceName(ResourceType type) {
+    if (type == ResourceType::BRICK) {
+        return "BRICK";
+    } else if (type == ResourceType::ENERGY) {
+        return "ENERGY";
+    } else if (type == ResourceType::GLASS) {
+        return "GLASS";
+    } else if (type == ResourceType::HEAT) {
+        return "HEAT";
+    } else if (type == ResourceType::WIFI) {
+        return "WIFI";
+    }
+
+    return "PARK";
+}
+
+bool parseSingleInteger(const string &line, int &value) {
+    istringstream input{line};
+    string extra;
+
+    return (input >> value) && !(input >> extra);
+}
+
+} // namespace
 
 
 GameController::GameController()
@@ -79,13 +119,300 @@ bool GameController::handleTrade( Builder &other, ResourceType give, ResourceTyp
     return false;
 }
 
+void GameController::grantInitialResources(
+    Builder &builder,
+    int vertexId
+) {
+    const vector<int> &tileIds =
+        board.getTilesForVertex(vertexId);
+
+    for (int tileId : tileIds) {
+        ResourceType type =
+            board.getTile(tileId).getType();
+
+        if (type != ResourceType::PARK) {
+            builder.addResource(type, 1);
+        }
+    }
+}
+
+bool GameController::performInitialPlacement() {
+    const int placementOrder[8] = {
+        0, 1, 2, 3, 3, 2, 1, 0
+    };
+
+    for (int placement = 0;
+         placement < 8;
+         ++placement) {
+        int builderIndex = placementOrder[placement];
+        Builder &builder = *builders[builderIndex];
+
+        while (true) {
+            cout << "Builder "
+                 << colourName(builder.getColour())
+                 << ", where do you want to build a basement?"
+                 << endl;
+
+            string line;
+            if (!getline(cin, line)) {
+                return false;
+            }
+
+            int vertexId;
+            if (
+                !parseSingleInteger(line, vertexId) ||
+                vertexId < 0 ||
+                vertexId >= 54 ||
+                !board.canPlaceInitialResidence(vertexId)
+            ) {
+                cout << "You cannot build here." << endl;
+                continue;
+            }
+
+            board.placeInitialResidence(
+                vertexId,
+                builder.getColour()
+            );
+            builder.addBuildingPoints(1);
+
+            if (placement >= 4) {
+                grantInitialResources(builder, vertexId);
+            }
+
+            break;
+        }
+    }
+
+    cout << TextDisplay{board};
+    return true;
+}
+
+void GameController::discardResourcesForGeese() {
+    for (int builderIndex = 0;
+         builderIndex < 4;
+         ++builderIndex) {
+        Builder &builder = *builders[builderIndex];
+        int total = builder.totalResources();
+
+        if (total < 10) {
+            continue;
+        }
+
+        int lossCount = total / 2;
+        int lost[5] = {};
+
+        for (int i = 0; i < lossCount; ++i) {
+            ResourceType lostType =
+                builder.removeRandomResource();
+            int resourceIndex =
+                static_cast<int>(lostType);
+
+            if (
+                resourceIndex >= 0 &&
+                resourceIndex < 5
+            ) {
+                ++lost[resourceIndex];
+            }
+        }
+
+        cout << "Builder "
+             << colourName(builder.getColour())
+             << " loses "
+             << lossCount
+             << " resources to the geese. They lose:"
+             << endl;
+
+        for (int resourceIndex = 0;
+             resourceIndex < 5;
+             ++resourceIndex) {
+            if (lost[resourceIndex] > 0) {
+                cout << lost[resourceIndex]
+                     << " "
+                     << resourceName(
+                            static_cast<ResourceType>(
+                                resourceIndex
+                            )
+                        )
+                     << endl;
+            }
+        }
+    }
+}
+
+vector<Builder *> GameController::getStealableBuilders(
+    int tileId
+) {
+    bool present[4] = {false, false, false, false};
+    Builder &current = getCurrentBuilder();
+
+    for (int vertexId :
+         board.getVerticesForTile(tileId)) {
+        Residence *residence =
+            board.getVertex(vertexId).getResidence();
+
+        if (residence == nullptr) {
+            continue;
+        }
+
+        for (int builderIndex = 0;
+             builderIndex < 4;
+             ++builderIndex) {
+            Builder *candidate = builders[builderIndex];
+
+            if (
+                candidate != &current &&
+                candidate->getColour() ==
+                    residence->getOwner() &&
+                candidate->totalResources() > 0
+            ) {
+                present[builderIndex] = true;
+            }
+        }
+    }
+
+    vector<Builder *> result;
+    for (int builderIndex = 0;
+         builderIndex < 4;
+         ++builderIndex) {
+        if (present[builderIndex]) {
+            result.push_back(builders[builderIndex]);
+        }
+    }
+
+    return result;
+}
+
+bool GameController::handleGeese() {
+    discardResourcesForGeese();
+
+    int tileId = -1;
+    while (true) {
+        cout << "Choose where to place the GEESE."
+             << endl;
+
+        string line;
+        if (!getline(cin, line)) {
+            gameStateIO.save("backup.sv");
+            gameRunning = false;
+            return false;
+        }
+
+        if (
+            parseSingleInteger(line, tileId) &&
+            board.canMoveGeeseTo(tileId)
+        ) {
+            break;
+        }
+
+        cout << "Invalid command." << endl;
+    }
+
+    board.moveGeeseTo(tileId);
+
+    vector<Builder *> candidates =
+        getStealableBuilders(tileId);
+    Builder &current = getCurrentBuilder();
+    string currentName =
+        colourName(current.getColour());
+
+    if (candidates.empty()) {
+        cout << "Builder "
+             << currentName
+             << " has no builders to steal from."
+             << endl;
+        return true;
+    }
+
+    cout << "Builder "
+         << currentName
+         << " can choose to steal from ";
+
+    for (int i = 0;
+         i < static_cast<int>(candidates.size());
+         ++i) {
+        if (i > 0) {
+            cout << ", ";
+        }
+        cout << colourName(candidates[i]->getColour());
+    }
+    cout << "." << endl;
+
+    Builder *victim = nullptr;
+    while (victim == nullptr) {
+        cout << "Choose a builder to steal from."
+             << endl;
+
+        string chosenColour;
+        if (!getline(cin, chosenColour)) {
+            gameStateIO.save("backup.sv");
+            gameRunning = false;
+            return false;
+        }
+
+        for (Builder *candidate : candidates) {
+            if (
+                chosenColour ==
+                colourName(candidate->getColour())
+            ) {
+                victim = candidate;
+                break;
+            }
+        }
+
+        if (victim == nullptr) {
+            cout << "Invalid command." << endl;
+        }
+    }
+
+    ResourceType stolen =
+        victim->removeRandomResource();
+    current.addResource(stolen, 1);
+
+    cout << "Builder "
+         << currentName
+         << " steals "
+         << resourceName(stolen)
+         << " from builder "
+         << colourName(victim->getColour())
+         << "."
+         << endl;
+
+    return true;
+}
+
 void GameController::startNewGame() {
     currentTurn = 0;
     gameRunning = true;
     hasRolled = false;
 
+    board.setupTopology();
+
+    int parkId = -1;
+    for (int tileId = 0; tileId < 19; ++tileId) {
+        if (
+            board.getTile(tileId).getType() ==
+            ResourceType::PARK
+        ) {
+            parkId = tileId;
+            break;
+        }
+    }
+
+    if (
+        parkId != -1 &&
+        board.getGeeseTile() != parkId
+    ) {
+        board.moveGeeseTo(parkId);
+    }
+
     for (int i = 0; i < 4; ++i) {
+        builders[i]->reset();
         builders[i]->setDice(loadedDice);
+    }
+
+    if (!performInitialPlacement()) {
+        gameStateIO.save("backup.sv");
+        gameRunning = false;
     }
 }
 
@@ -133,9 +460,13 @@ void GameController::processCommand(const std::string &command) {
     }
         cout << "You rolled " << result << "." << endl;
 
-        if (result != 7) {
-        distributeResources(result);
-    }
+        if (result == 7) {
+            if (!handleGeese()) {
+                return;
+            }
+        } else {
+            distributeResources(result);
+        }
         hasRolled = true;
 
     } else if (action == "save") {
@@ -482,7 +813,9 @@ void GameController::processCommand(const std::string &command) {
 }
 
 void GameController::run() {
-    gameRunning = true;
+    if (!gameRunning) {
+        return;
+    }
 
     while (gameRunning) {
         if (hasWinner()) {
