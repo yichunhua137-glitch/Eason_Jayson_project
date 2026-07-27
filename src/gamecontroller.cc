@@ -9,6 +9,7 @@ import builder;
 import dice;
 import types;
 import gamestateio;
+import boardsetupstrategy;
 
 export class GameController {
   private:
@@ -38,6 +39,7 @@ export class GameController {
     void processCommand(const std::string &command);
     void nextTurn();
     bool loadGame(const std::string &filename);
+    bool setupBoard(BoardSetupStrategy &strategy);
 
     bool handleTrade(
         Builder &other,
