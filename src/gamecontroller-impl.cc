@@ -526,9 +526,9 @@ void GameController::run() {
     }
 }
 
-bool GameController::setupBoard(BoardSetupStrategy &strategy) {
-    board.setupDefaultBoard();
-
+bool GameController::setupBoard(
+    BoardSetupStrategy &strategy
+) {
     return strategy.configure(board);
 }
 

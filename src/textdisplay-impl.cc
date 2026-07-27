@@ -3,6 +3,7 @@ module;
 #include <iomanip>
 #include <sstream>
 #include <string>
+#include <vector>
 
 module textdisplay;
 
@@ -90,10 +91,6 @@ string edgeLabel(const Board &board, int edgeId) {
     return out.str();
 }
 
-string tileIdLabel(int tileId) {
-    return label2(tileId);
-}
-
 string tileValueLabel(const Board &board, int tileId) {
     const Tile &tile = board.getTile(tileId);
 
@@ -104,51 +101,90 @@ string tileValueLabel(const Board &board, int tileId) {
     return label2(tile.getNumber());
 }
 
-string geeseLabel(const Board &board, int tileId) {
-    if (board.getTile(tileId).hasGeeseOnTile()) {
-        return "GEESE";
+struct Position {
+    int x;
+    int y;
+};
+
+void put(
+    vector<string> &canvas,
+    int x,
+    int y,
+    const string &text
+) {
+    if (y < 0 || y >= static_cast<int>(canvas.size())) {
+        return;
     }
 
-    return "     ";
+    for (int i = 0; i < static_cast<int>(text.size()); ++i) {
+        int column = x + i;
+
+        if (
+            column >= 0 &&
+            column < static_cast<int>(canvas[y].size())
+        ) {
+            canvas[y][column] = text[i];
+        }
+    }
 }
 
-void appendTileBlock(
-    ostringstream &out,
-    const Board &board,
-    int tileId,
-    int leftEdge,
-    int topLeftVertex,
-    int topRightVertex,
-    int bottomLeftVertex,
-    int bottomRightVertex,
-    const string &indent
-) {
-    out << indent
-        << "|" << vertexLabel(board, topLeftVertex) << "|--"
-        << edgeLabel(board, leftEdge) << "--|"
-        << vertexLabel(board, topRightVertex) << "|\n";
-
-    out << indent << "|               |\n";
-
-    out << indent << "    " << tileIdLabel(tileId) << "         \n";
-
-    {
-        ostringstream line;
-        line << indent << "   " << setw(7) << left
-             << resourceName(board.getTile(tileId).getType())
-             << "     ";
-        out << line.str() << '\n';
+Position vertexPosition(int vertexId) {
+    if (vertexId < 2) {
+        return Position{30 + 10 * vertexId, 0};
     }
 
-    out << indent << "    " << tileValueLabel(board, tileId) << "         \n";
-
-    if (geeseLabel(board, tileId) != "     ") {
-        out << indent << "  " << geeseLabel(board, tileId) << "      \n";
+    if (vertexId < 6) {
+        return Position{20 + 10 * (vertexId - 2), 4};
     }
 
-    out << indent
-        << "|" << vertexLabel(board, bottomLeftVertex) << "|     |"
-        << vertexLabel(board, bottomRightVertex) << "|\n";
+    if (vertexId < 48) {
+        int row = (vertexId - 6) / 6;
+        int column = (vertexId - 6) % 6;
+        return Position{10 + 10 * column, 8 + 4 * row};
+    }
+
+    if (vertexId < 52) {
+        return Position{20 + 10 * (vertexId - 48), 36};
+    }
+
+    return Position{30 + 10 * (vertexId - 52), 40};
+}
+
+Position tilePosition(int tileId) {
+    static const Position positions[19] = {
+        {35, 2},
+        {25, 6}, {45, 6},
+        {15, 10}, {35, 10}, {55, 10},
+        {25, 14}, {45, 14},
+        {15, 18}, {35, 18}, {55, 18},
+        {25, 22}, {45, 22},
+        {15, 26}, {35, 26}, {55, 26},
+        {25, 30}, {45, 30},
+        {35, 34}
+    };
+
+    return positions[tileId];
+}
+
+Position edgeEndpointPosition(int edgeId, int endpoint) {
+    static const int endpoints[72][2] = {
+        {0, 1}, {0, 3}, {1, 4}, {2, 3}, {4, 5}, {2, 7},
+        {3, 8}, {4, 9}, {5, 10}, {6, 7}, {8, 9}, {10, 11},
+        {6, 12}, {7, 13}, {8, 14}, {9, 15}, {10, 16}, {11, 17},
+        {13, 14}, {15, 16}, {12, 18}, {13, 19}, {14, 20},
+        {15, 21}, {16, 22}, {17, 23}, {18, 19}, {20, 21},
+        {22, 23}, {18, 24}, {19, 25}, {20, 26}, {21, 27},
+        {22, 28}, {23, 29}, {25, 26}, {27, 28}, {24, 30},
+        {25, 31}, {26, 32}, {27, 33}, {28, 34}, {29, 35},
+        {30, 31}, {32, 33}, {34, 35}, {30, 36}, {31, 37},
+        {32, 38}, {33, 39}, {34, 40}, {35, 41}, {37, 38},
+        {39, 40}, {36, 42}, {37, 43}, {38, 44}, {39, 45},
+        {40, 46}, {41, 47}, {42, 43}, {44, 45}, {46, 47},
+        {43, 48}, {44, 49}, {45, 50}, {46, 51}, {48, 49},
+        {50, 51}, {49, 52}, {50, 53}, {52, 53}
+    };
+
+    return vertexPosition(endpoints[edgeId][endpoint]);
 }
 
 } // namespace
@@ -161,118 +197,106 @@ string TextDisplay::render() const {
 }
 
 string TextDisplay::renderFormal() const {
+    vector<string> canvas(41, string(74, ' '));
+
+    // Draw the 72 roads from the fixed Figure 3 topology. Horizontal roads
+    // use "--xx--"; vertical roads use the label between bars.
+    for (int edgeId = 0; edgeId < 72; ++edgeId) {
+        Position first = edgeEndpointPosition(edgeId, 0);
+        Position second = edgeEndpointPosition(edgeId, 1);
+
+        if (first.y == second.y) {
+            if (first.x > second.x) {
+                Position temporary = first;
+                first = second;
+                second = temporary;
+            }
+
+            put(
+                canvas,
+                first.x + 4,
+                first.y,
+                "--" + edgeLabel(board, edgeId) + "--"
+            );
+        } else {
+            if (first.y > second.y) {
+                Position temporary = first;
+                first = second;
+                second = temporary;
+            }
+
+            put(canvas, first.x, first.y + 1, "|");
+            put(
+                canvas,
+                first.x - 1,
+                first.y + 2,
+                edgeLabel(board, edgeId)
+            );
+            put(canvas, first.x, first.y + 3, "|");
+        }
+    }
+
+    // Vertices are drawn after roads so their boundary bars are never
+    // overwritten at road intersections.
+    for (int vertexId = 0; vertexId < 54; ++vertexId) {
+        Position position = vertexPosition(vertexId);
+        put(
+            canvas,
+            position.x,
+            position.y,
+            "|" + vertexLabel(board, vertexId) + "|"
+        );
+    }
+
+    // Each tile uses the three central lines shown in ctor.pdf Figure 3.
+    // GEESE occupies the otherwise blank line immediately below the value,
+    // matching Figure 2, without changing the shape of the board.
+    for (int tileId = 0; tileId < 19; ++tileId) {
+        Position position = tilePosition(tileId);
+        string resource =
+            resourceName(board.getTile(tileId).getType());
+
+        put(
+            canvas,
+            position.x - 1,
+            position.y,
+            label2(tileId)
+        );
+        put(
+            canvas,
+            position.x -
+                static_cast<int>(resource.size()) / 2,
+            position.y + 1,
+            resource
+        );
+        put(
+            canvas,
+            position.x - 1,
+            position.y + 2,
+            tileValueLabel(board, tileId)
+        );
+
+        if (board.getTile(tileId).hasGeeseOnTile()) {
+            put(
+                canvas,
+                position.x - 2,
+                position.y + 3,
+                "GEESE"
+            );
+        }
+    }
+
     ostringstream out;
 
-    out << "                |" << vertexLabel(board, 0) << "|--"
-        << edgeLabel(board, 0) << "--|" << vertexLabel(board, 1) << "|\n";
-    out << "                |         |\n";
-    out << "                   " << tileIdLabel(0) << '\n';
-    out << "                 BRICK\n";
-    out << "                   " << tileValueLabel(board, 0) << '\n';
-    out << "          |" << vertexLabel(board, 2) << "|--"
-        << edgeLabel(board, 3) << "--|" << vertexLabel(board, 3)
-        << "|   " << tileIdLabel(1) << "   |" << vertexLabel(board, 4)
-        << "|--" << edgeLabel(board, 4) << "--|" << vertexLabel(board, 5)
-        << "|\n";
-    out << "          |         |       |         |\n";
-    out << "             " << tileIdLabel(1) << "         " << tileIdLabel(2) << '\n';
-    out << "           ENERGY        HEAT\n";
-    out << "             " << tileValueLabel(board, 1) << "         "
-        << tileValueLabel(board, 2) << '\n';
-    out << "|" << vertexLabel(board, 6) << "|--" << edgeLabel(board, 9)
-        << "--|" << vertexLabel(board, 7) << "|   " << tileIdLabel(3)
-        << "   |" << vertexLabel(board, 8) << "|--" << edgeLabel(board, 10)
-        << "--|" << vertexLabel(board, 9) << "|   " << tileIdLabel(5)
-        << "   |" << vertexLabel(board, 10) << "|--" << edgeLabel(board, 11)
-        << "--|" << vertexLabel(board, 11) << "|\n";
-    out << "|         |       |         |       |         |\n";
-    out << "   " << tileIdLabel(3) << "         " << tileIdLabel(4)
-        << "         " << tileIdLabel(5) << '\n';
-    out << " ENERGY        PARK         HEAT\n";
-    out << "   " << tileValueLabel(board, 3) << "         "
-        << tileValueLabel(board, 4) << "         "
-        << tileValueLabel(board, 5) << '\n';
-    if (geeseLabel(board, 4) != "     ") {
-        out << "             " << geeseLabel(board, 4) << '\n';
+    for (string line : canvas) {
+        size_t last = line.find_last_not_of(' ');
+
+        if (last == string::npos) {
+            out << '\n';
+        } else {
+            out << line.substr(0, last + 1) << '\n';
+        }
     }
-    out << "|" << vertexLabel(board, 12) << "|--" << edgeLabel(board, 12)
-        << "--|" << vertexLabel(board, 13) << "|--" << edgeLabel(board, 18)
-        << "--|" << vertexLabel(board, 14) << "|--" << edgeLabel(board, 19)
-        << "--|" << vertexLabel(board, 16) << "|--" << edgeLabel(board, 17)
-        << "--|" << vertexLabel(board, 17) << "|\n";
-    out << "|         |       |         |       |         |\n";
-    out << "     " << tileIdLabel(6) << "         " << tileIdLabel(7)
-        << "         " << tileIdLabel(8) << '\n';
-    out << "     GLASS        BRICK       BRICK\n";
-    out << "      " << tileValueLabel(board, 6) << "         "
-        << tileValueLabel(board, 7) << "         "
-        << tileValueLabel(board, 8) << '\n';
-    out << "|" << vertexLabel(board, 18) << "|--" << edgeLabel(board, 26)
-        << "--|" << vertexLabel(board, 19) << "|   " << tileIdLabel(8)
-        << "   |" << vertexLabel(board, 20) << "|--" << edgeLabel(board, 27)
-        << "--|" << vertexLabel(board, 21) << "|   " << tileIdLabel(10)
-        << "   |" << vertexLabel(board, 22) << "|--" << edgeLabel(board, 28)
-        << "--|" << vertexLabel(board, 23) << "|\n";
-    out << "|         |       |         |       |         |\n";
-    out << "   " << tileIdLabel(8) << "         " << tileIdLabel(9)
-        << "         " << tileIdLabel(10) << '\n';
-    out << "   HEAT         BRICK       BRICK\n";
-    out << "    " << tileValueLabel(board, 8) << "         "
-        << tileValueLabel(board, 9) << "         "
-        << tileValueLabel(board, 10) << '\n';
-    out << "|" << vertexLabel(board, 24) << "|--" << edgeLabel(board, 24)
-        << "--|" << vertexLabel(board, 25) << "|--" << edgeLabel(board, 35)
-        << "--|" << vertexLabel(board, 26) << "|--" << edgeLabel(board, 36)
-        << "--|" << vertexLabel(board, 28) << "|--" << edgeLabel(board, 34)
-        << "--|" << vertexLabel(board, 29) << "|\n";
-    out << "|         |       |         |       |         |\n";
-    out << "     " << tileIdLabel(11) << "         " << tileIdLabel(12)
-        << "         " << tileIdLabel(13) << '\n';
-    out << "    ENERGY        WIFI        GLASS\n";
-    out << "      " << tileValueLabel(board, 11) << "         "
-        << tileValueLabel(board, 12) << "         "
-        << tileValueLabel(board, 13) << '\n';
-    out << "|" << vertexLabel(board, 30) << "|--" << edgeLabel(board, 43)
-        << "--|" << vertexLabel(board, 31) << "|   " << tileIdLabel(13)
-        << "   |" << vertexLabel(board, 32) << "|--" << edgeLabel(board, 44)
-        << "--|" << vertexLabel(board, 33) << "|   " << tileIdLabel(15)
-        << "   |" << vertexLabel(board, 34) << "|--" << edgeLabel(board, 45)
-        << "--|" << vertexLabel(board, 35) << "|\n";
-    out << "|         |       |         |       |         |\n";
-    out << "   " << tileIdLabel(13) << "         " << tileIdLabel(14)
-        << "         " << tileIdLabel(15) << '\n';
-    out << "   ENERGY        WIFI        GLASS\n";
-    out << "    " << tileValueLabel(board, 13) << "         "
-        << tileValueLabel(board, 14) << "         "
-        << tileValueLabel(board, 15) << '\n';
-    out << "|" << vertexLabel(board, 36) << "|--" << edgeLabel(board, 36)
-        << "--|" << vertexLabel(board, 37) << "|--" << edgeLabel(board, 52)
-        << "--|" << vertexLabel(board, 38) << "|--" << edgeLabel(board, 53)
-        << "--|" << vertexLabel(board, 40) << "|--" << edgeLabel(board, 41)
-        << "--|" << vertexLabel(board, 41) << "|\n";
-    out << "|         |       |         |       |         |\n";
-    out << "     " << tileIdLabel(16) << "         " << tileIdLabel(17)
-        << "         \n";
-    out << "      WIFI         GLASS\n";
-    out << "       " << tileValueLabel(board, 16) << "         "
-        << tileValueLabel(board, 17) << '\n';
-    out << "          |" << vertexLabel(board, 42) << "|--"
-        << edgeLabel(board, 60) << "--|" << vertexLabel(board, 43)
-        << "|   " << tileIdLabel(18) << "   |" << vertexLabel(board, 44)
-        << "|--" << edgeLabel(board, 61) << "--|" << vertexLabel(board, 45)
-        << "|\n";
-    out << "          |         |       |         |\n";
-    out << "             " << tileIdLabel(18) << "         \n";
-    out << "            GLASS\n";
-    out << "             " << tileValueLabel(board, 18) << '\n';
-    out << "                |" << vertexLabel(board, 48) << "|--"
-        << edgeLabel(board, 67) << "--|" << vertexLabel(board, 49)
-        << "|--" << edgeLabel(board, 68) << "--|" << vertexLabel(board, 51)
-        << "|\n";
-    out << "                      |         |\n";
-    out << "                         |" << vertexLabel(board, 52)
-        << "|--" << edgeLabel(board, 71) << "--|"
-        << vertexLabel(board, 53) << "|\n";
 
     return out.str();
 }
@@ -292,11 +316,15 @@ string TextDisplay::renderDebug() const {
 
         out << '[' << setw(2) << tileId << "] "
             << setw(7) << left << resourceName(tile.getType())
-            << " value=" << setw(5) << left << tileValueLabel(board, tileId)
-            << " geese=" << (tile.hasGeeseOnTile() ? "yes" : "no")
+            << " value=" << setw(5) << left
+            << tileValueLabel(board, tileId)
+            << " geese="
+            << (tile.hasGeeseOnTile() ? "yes" : "no")
             << " vertices=";
 
-        for (int i = 0; i < static_cast<int>(vertices.size()); ++i) {
+        for (int i = 0;
+             i < static_cast<int>(vertices.size());
+             ++i) {
             if (i > 0) {
                 out << ',';
             }

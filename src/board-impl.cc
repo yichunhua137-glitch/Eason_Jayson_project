@@ -9,9 +9,23 @@ Board::Board() {}
 // Release every dynamically allocated residence owned by the board.
 // 释放 board 持有的所有动态分配的 residence。
 Board::~Board() {
+    clear();
+}
+
+void Board::clear() {
     for (Residence *residence : residences) {
         delete residence;
     }
+
+    residences.clear();
+    tiles.clear();
+    vertices.clear();
+    edges.clear();
+    edgeVertices.clear();
+    vertexEdges.clear();
+    vertexNeighbours.clear();
+    tileVertices.clear();
+    vertexTiles.clear();
 }
 
 // Return mutable access to a tile by id.
@@ -324,10 +338,7 @@ std::vector<int> Board::getProducingTiles(int roll) const {
 // Build the fixed default Constructor board layout and reset old board state.
 // 建立固定的默认 Constructor 棋盘布局，并重置旧的 board 状态。
 void Board::setupDefaultBoard(){
-    for (Residence *residence : residences) {
-        delete residence;
-    }
-    residences.clear();
+    clear();
 
     ResourceType resourceTypes[19] = {
         ResourceType::BRICK,
@@ -356,9 +367,6 @@ void Board::setupDefaultBoard(){
         ResourceType::PARK
     };
 
-    tiles.clear();
-    tileVertices.clear();
-
     int values[19] = {
         2, 12,
         3, 3,
@@ -372,12 +380,24 @@ void Board::setupDefaultBoard(){
         0
     };
 
-    initializeVertices(54);
-    initializeEdges(72);
-
     for (int i = 0; i < 19; ++i) {
         addTile(resourceTypes[i], values[i]);
     }
+
+    setupTopology();
+}
+
+void Board::setupTopology() {
+    for (Residence *residence : residences) {
+        delete residence;
+    }
+    residences.clear();
+
+    initializeVertices(54);
+    initializeEdges(72);
+
+    tileVertices.clear();
+    tileVertices.resize(19);
 
     connectTileToVertices(0, {0, 1, 3, 4, 8, 9});
 

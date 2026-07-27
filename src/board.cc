@@ -42,6 +42,9 @@ export class Board {
     Board(const Board &) = delete;
     Board &operator=(const Board &) = delete;
 
+    void clear();
+    void setupTopology();
+
     Tile &getTile(int id);
     Vertex &getVertex(int id);
     Edge &getEdge(int id);

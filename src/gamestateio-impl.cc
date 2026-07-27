@@ -209,18 +209,17 @@ bool GameStateIO::load(const string &filename) {
         return false;
     }
 
-    board.setupDefaultBoard();
+    board.clear();
 
-    for (int tileId = 0;
-         tileId < 19;
-         ++tileId) {
-
+    for (int tileId = 0; tileId < 19; ++tileId) {
         board.setTile(
-        tileId,
-        tileTypes[tileId],
-        tileValues[tileId]
-);
+            tileId,
+            tileTypes[tileId],
+            tileValues[tileId]
+        );
     }
+
+    board.setupTopology();
 
     for (int builderIndex = 0;
          builderIndex < 4;
