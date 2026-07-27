@@ -72,6 +72,51 @@ try {
             throw "$executable failed."
         }
     }
+
+    & $compiler @flags (Join-Path $sourceDirectory "main.cc") @objects -o "constructor-cli.exe"
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to link the command-line executable."
+    }
+
+    $layout = @()
+    for ($i = 0; $i -lt 19; ++$i) {
+        $layout += "4 12"
+    }
+    Set-Content -LiteralPath "layout.txt" -Value ($layout -join " ")
+
+    $placementInput = "0`n2`n5`n6`n11`n18`n23`n52`n"
+
+    $defaultOutput = $placementInput | & ".\constructor-cli.exe"
+    if (
+        ($defaultOutput -join "`n") -notmatch "Builder Blue's turn\." -or
+        ($defaultOutput -join "`n") -cmatch "BRICK"
+    ) {
+        throw "Default layout.txt command-line test failed."
+    }
+
+    $randomOutput = $placementInput |
+        & ".\constructor-cli.exe" -seed 1 -random-board
+    if (
+        ($randomOutput -join "`n") -notmatch "Builder Blue's turn\." -or
+        ($randomOutput -join "`n") -cnotmatch "BRICK"
+    ) {
+        throw "-random-board command-line test failed."
+    }
+
+    $savedErrorPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    $seedOutput = & ".\constructor-cli.exe" -seed invalid 2>&1
+    $seedExitCode = $LASTEXITCODE
+    $ErrorActionPreference = $savedErrorPreference
+    if (
+        $seedExitCode -eq 0 -or
+        ($seedOutput -join "`n") -notmatch "Invalid seed\."
+    ) {
+        throw "Invalid -seed command-line test failed."
+    }
+
+    Write-Host "==> command-line"
+    Write-Host "command-line tests passed"
 } finally {
     Pop-Location
 }

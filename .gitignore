@@ -12,3 +12,5 @@ gcm.cache/
 .vscode/
 .idea/
 src/tests/build/
+.vector-header-unit
+backup.sv
