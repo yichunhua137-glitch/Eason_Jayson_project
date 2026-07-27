@@ -1268,7 +1268,7 @@ void testGameController(TestSuite &suite) {
         "Run prints the current builder status at turn start"
     );
     suite.expect(
-        turnStartOutput.str().find("| 0|--") !=
+        turnStartOutput.str().find("PARK") !=
             std::string::npos,
         "Run prints the board at turn start"
     );
