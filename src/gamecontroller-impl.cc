@@ -648,50 +648,37 @@ void GameController::processCommand(const std::string &command) {
         }
 
     } else if (action == "residences") {
-        string colourName;
-
-        if (current.getColour() == Colour::BLUE) {
-            colourName = "Blue";
-        } else if (current.getColour() == Colour::RED) {
-            colourName = "Red";
-        } else if (current.getColour() == Colour::ORANGE) {
-            colourName = "Orange";
-        } else {
-            colourName = "Yellow";
-        }
-
-        cout << colourName << " has built:" << endl;
+        cout << colourName(current.getColour())
+             << " has built:" << endl;
 
         for (int vertexId = 0;
-             vertexId < 54;
-             ++vertexId) {
+            vertexId < 54;
+            ++vertexId) {
 
-            Residence *residence =
-                board.getVertex(vertexId).getResidence();
+        Residence *residence = board.getVertex(vertexId).getResidence();
 
-            if (residence != nullptr &&
-                residence->getOwner() ==
-                    current.getColour()) {
+        if (residence != nullptr &&
+            residence->getOwner() ==
+                current.getColour()) {
 
-                char buildingType;
+            char buildingType;
 
-                if (residence->getType() ==
-                    ResidenceType::BASEMENT) {
-                    buildingType = 'B';
-                } else if (residence->getType() ==
-                           ResidenceType::HOUSE) {
-                    buildingType = 'H';
-                } else {
-                    buildingType = 'T';
-                }
-
-                cout << vertexId
-                     << " "
-                     << buildingType
-                     << endl;
+            if (residence->getType() ==
+                ResidenceType::BASEMENT) {
+                buildingType = 'B';
+            } else if (residence->getType() ==
+                       ResidenceType::HOUSE) {
+                buildingType = 'H';
+            } else {
+                buildingType = 'T';
             }
-        }
 
+            cout << vertexId
+                 << " "
+                 << buildingType
+                 << endl;
+        }
+    }
     } else if (action == "board") {
         cout << TextDisplay{board};
 
@@ -764,18 +751,7 @@ void GameController::processCommand(const std::string &command) {
             return;
         }
 
-        string currentColour;
-
-        if (current.getColour() == Colour::BLUE) {
-            currentColour = "Blue";
-        } else if (current.getColour() == Colour::RED) {
-            currentColour = "Red";
-        } else if (current.getColour() ==
-                   Colour::ORANGE) {
-            currentColour = "Orange";
-        } else {
-            currentColour = "Yellow";
-        }
+        string currentColour = colourName(current.getColour());
 
         cout << currentColour
              << " offers "
@@ -932,12 +908,6 @@ void GameController::distributeResources(int roll) {
         }
     }
 
-    string colourNames[4] = {
-        "Blue",
-        "Red",
-        "Orange",
-        "Yellow"
-    };
 
     string resourceNames[5] = {
         "BRICK",
@@ -974,9 +944,9 @@ void GameController::distributeResources(int roll) {
         anyoneGained = true;
 
         cout << "Builder "
-             << colourNames[builderIndex]
-             << " gained:"
-             << endl;
+            << colourName( builders[builderIndex]->getColour())
+            << " gained:"
+            << endl;
 
         for (int resourceIndex = 0;
              resourceIndex < 5;
@@ -1003,20 +973,10 @@ void GameController::distributeResources(int roll) {
     }
 }
 
-void GameController::printBuilderStatus(const Builder &builder) const {
-    string colourName;
-
-    if (builder.getColour() == Colour::BLUE) {
-        colourName = "Blue";
-    } else if (builder.getColour() == Colour::RED) {
-        colourName = "Red";
-    } else if (builder.getColour() == Colour::ORANGE) {
-        colourName = "Orange";
-    } else {
-        colourName = "Yellow";
-    }
-
-    cout << colourName
+void GameController::printBuilderStatus(
+    const Builder &builder
+) const {
+    cout << colourName(builder.getColour())
          << " has "
          << builder.buildingPoints()
          << " building points, "
@@ -1034,17 +994,10 @@ void GameController::printBuilderStatus(const Builder &builder) const {
 }
 
 void GameController::printTurnStart() const {
-    string colourNames[4] = {
-        "Blue",
-        "Red",
-        "Orange",
-        "Yellow"
-    };
-
     cout << TextDisplay{board};
 
     cout << "Builder "
-         << colourNames[currentTurn]
+         << colourName(builders[currentTurn]->getColour())
          << "'s turn."
          << endl;
 
