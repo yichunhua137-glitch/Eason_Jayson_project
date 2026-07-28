@@ -184,7 +184,6 @@ bool GameController::performInitialPlacement() {
         }
     }
 
-    cout << TextDisplay{board};
     return true;
 }
 

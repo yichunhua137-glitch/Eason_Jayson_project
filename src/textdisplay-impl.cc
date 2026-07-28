@@ -212,7 +212,7 @@ string TextDisplay::renderFormal() const {
 
             put(
                 canvas,
-                first.x + 4,
+                first.x + 2,
                 first.y,
                 "--" + edgeLabel(board, edgeId) + "--"
             );
@@ -238,7 +238,7 @@ string TextDisplay::renderFormal() const {
         Position position = vertexPosition(vertexId);
         put(
             canvas,
-            position.x,
+            position.x - 2,
             position.y,
             "|" + vertexLabel(board, vertexId) + "|"
         );
