@@ -187,7 +187,7 @@ Position edgeEndpointPosition(int edgeId, int endpoint) {
     return vertexPosition(endpoints[edgeId][endpoint]);
 }
 
-} // namespace
+}
 
 TextDisplay::TextDisplay(const Board &board)
     : board{board} {}
@@ -199,8 +199,6 @@ string TextDisplay::render() const {
 string TextDisplay::renderFormal() const {
     vector<string> canvas(41, string(74, ' '));
 
-    // Draw the 72 roads from the fixed Figure 3 topology. Horizontal roads
-    // use "--xx--"; vertical roads use the label between bars.
     for (int edgeId = 0; edgeId < 72; ++edgeId) {
         Position first = edgeEndpointPosition(edgeId, 0);
         Position second = edgeEndpointPosition(edgeId, 1);
@@ -236,8 +234,6 @@ string TextDisplay::renderFormal() const {
         }
     }
 
-    // Vertices are drawn after roads so their boundary bars are never
-    // overwritten at road intersections.
     for (int vertexId = 0; vertexId < 54; ++vertexId) {
         Position position = vertexPosition(vertexId);
         put(
@@ -248,9 +244,6 @@ string TextDisplay::renderFormal() const {
         );
     }
 
-    // Each tile uses the three central lines shown in ctor.pdf Figure 3.
-    // GEESE occupies the otherwise blank line immediately below the value,
-    // matching Figure 2, without changing the shape of the board.
     for (int tileId = 0; tileId < 19; ++tileId) {
         Position position = tilePosition(tileId);
         string resource =

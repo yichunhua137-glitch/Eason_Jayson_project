@@ -2,12 +2,8 @@ module board;
 
 import residence;
 
-// Initialize an empty board object.
-// 初始化一个空的 board 对象。
 Board::Board() {}
 
-// Release every dynamically allocated residence owned by the board.
-// 释放 board 持有的所有动态分配的 residence。
 Board::~Board() {
     clear();
 }
@@ -28,44 +24,30 @@ void Board::clear() {
     vertexTiles.clear();
 }
 
-// Return mutable access to a tile by id.
-// 按编号返回一个可修改的 tile。
 Tile &Board::getTile(int id) {
     return tiles[id];
 }
 
-// Return mutable access to a vertex by id.
-// 按编号返回一个可修改的 vertex。
 Vertex &Board::getVertex(int id) {
     return vertices[id];
 }
 
-// Return mutable access to an edge by id.
-// 按编号返回一个可修改的 edge。
 Edge &Board::getEdge(int id) {
     return edges[id];
 }
 
-// Return read-only access to a tile by id.
-// 按编号返回一个只读 tile。
 const Tile &Board::getTile(int id) const {
     return tiles[id];
 }
 
-// Return read-only access to a vertex by id.
-// 按编号返回一个只读 vertex。
 const Vertex &Board::getVertex(int id) const {
     return vertices[id];
 }
 
-// Return read-only access to an edge by id.
-// 按编号返回一个只读 edge。
 const Edge &Board::getEdge(int id) const {
     return edges[id];
 }
 
-// Rebuild the vertex storage and reset all vertex-based adjacency tables.
-// 重新建立 vertex 存储，并清空所有基于 vertex 的邻接表。
 void Board::initializeVertices(int count) {
     vertices.clear();
     vertexEdges.clear();
@@ -81,8 +63,6 @@ void Board::initializeVertices(int count) {
     }
 }
 
-// Rebuild the edge storage and reset the edge-to-vertices table.
-// 重新建立 edge 存储，并清空 edge 到 vertices 的映射。
 void Board::initializeEdges(int count) {
     edges.clear();
     edgeVertices.clear();
@@ -94,8 +74,6 @@ void Board::initializeEdges(int count) {
     }
 }
 
-// Append one tile to the board and reserve its tile-to-vertices entry.
-// 向 board 追加一个 tile，并为它准备 tile-to-vertices 的槽位。
 void Board::addTile(ResourceType type, int number) {
     int id = static_cast<int>(tiles.size());
 
@@ -103,8 +81,6 @@ void Board::addTile(ResourceType type, int number) {
     tileVertices.emplace_back();
 }
 
-// Connect one edge to its two endpoint vertices and update reverse adjacency tables.
-// 把一条 edge 连接到两个端点 vertex，并同步更新反向邻接表。
 void Board::connectEdgeToVertices(
     int edgeId,
     int vertex1,
@@ -119,26 +95,18 @@ void Board::connectEdgeToVertices(
     vertexNeighbours[vertex2].push_back(vertex1);
 }
 
-// Return the two endpoint vertices of one edge.
-// 返回一条 edge 的两个端点 vertex。
 const std::vector<int> &Board::getVerticesForEdge(int edgeId) const {
     return edgeVertices[edgeId];
 }
 
-// Return all edges adjacent to one vertex.
-// 返回一个 vertex 相邻的所有 edge。
 const std::vector<int> &Board::getEdgesForVertex(int vertexId) const {
     return vertexEdges[vertexId];
 }
 
-// Return all neighbouring vertices adjacent to one vertex.
-// 返回一个 vertex 相邻的所有 vertex。
 const std::vector<int> &Board::getNeighboursForVertex(int vertexId) const {
     return vertexNeighbours[vertexId];
 }
 
-// Connect one tile to its six surrounding vertices and update vertex-to-tiles.
-// 把一个 tile 连接到周围六个 vertex，并更新 vertex-to-tiles 关系。
 void Board::connectTileToVertices(
     int tileId,
     const std::vector<int> &vertexIds
@@ -150,20 +118,14 @@ void Board::connectTileToVertices(
     }
 }
 
-// Return the six vertices surrounding one tile.
-// 返回一个 tile 周围的六个 vertex。
 const std::vector<int> &Board::getVerticesForTile(int tileId) const {
     return tileVertices[tileId];
 }
 
-// Return all tiles adjacent to one vertex.
-// 返回一个 vertex 相邻的所有 tile。
 const std::vector<int> &Board::getTilesForVertex(int vertexId) const {
     return vertexTiles[vertexId];
 }
 
-// Check whether a builder can legally build a road on the given edge.
-// 检查某个 builder 是否可以合法地在指定 edge 上建 road。
 bool Board::canBuildRoad(int edgeId, Colour colour) const {
     if (edges[edgeId].isBuilt()) {
         return false;
@@ -181,7 +143,6 @@ bool Board::canBuildRoad(int edgeId, Colour colour) const {
                 return true;
             }
 
-            // Another player's residence blocks connection
             continue;
         }
 
@@ -204,14 +165,10 @@ bool Board::canBuildRoad(int edgeId, Colour colour) const {
     return false;
 }
 
-// Build a road on the given edge for the given builder colour.
-// 在指定 edge 上为指定颜色建一条 road。
 void Board::buildRoad(int edgeId, Colour colour) {
     edges[edgeId].build(colour);
 }
 
-// Check whether a builder can legally build a residence on the given vertex.
-// 检查某个 builder 是否可以合法地在指定 vertex 上建 residence。
 bool Board::canBuildResidence(int vertexId, Colour colour) const {
     if (vertices[vertexId].hasResidence()) {
         return false;
@@ -234,8 +191,6 @@ bool Board::canBuildResidence(int vertexId, Colour colour) const {
     return false;
 }
 
-// Create and place a new residence owned by the given builder.
-// 创建并放置一个属于指定 builder 的新 residence。
 void Board::buildResidence(int vertexId, Colour colour) {
     Residence *residence = new Residence{colour};
 
@@ -243,8 +198,6 @@ void Board::buildResidence(int vertexId, Colour colour) {
     vertices[vertexId].buildResidence(residence);
 }
 
-// Check whether the residence on a vertex can be upgraded by this builder.
-// 检查一个 vertex 上的 residence 是否能被该 builder 升级。
 bool Board::canUpgradeResidence(int vertexId, Colour colour) const {
     const Vertex &vertex = vertices[vertexId];
     if (!vertex.hasResidence()) {
@@ -264,14 +217,10 @@ bool Board::canUpgradeResidence(int vertexId, Colour colour) const {
     return true;
 }
 
-// Upgrade the residence already stored on the given vertex.
-// 升级指定 vertex 上已经存在的 residence。
 void Board::upgradeResidence(int vertexId) {
     vertices[vertexId].getResidence()->upgrade();
 }
 
-// Check whether a vertex is legal for initial residence placement.
-// 检查一个 vertex 是否适合开局放置 residence。
 bool Board::canPlaceInitialResidence(int vertexId) const {
     if (vertices[vertexId].hasResidence()) {
         return false;
@@ -286,14 +235,10 @@ bool Board::canPlaceInitialResidence(int vertexId) const {
     return true;
 }
 
-// Place an initial residence by reusing the normal residence-building helper.
-// 复用普通建房逻辑来放置开局 residence。
 void Board::placeInitialResidence(int vertexId, Colour colour) {
     buildResidence(vertexId, colour);
 }
 
-// Check whether an initial road touches the residence chosen in setup.
-// 检查开局 road 是否与当前选中的 residence 相接。
 bool Board::canPlaceInitialRoad(
     int edgeId,
     int residenceVertexId
@@ -311,14 +256,10 @@ bool Board::canPlaceInitialRoad(
     return false;
 }
 
-// Place an initial road by reusing the normal road-building helper.
-// 复用普通建路逻辑来放置开局 road。
 void Board::placeInitialRoad(int edgeId, Colour colour) {
     buildRoad(edgeId, colour);
 }
 
-// Return every tile id that should produce for this dice roll.
-// 返回这次骰子点数下所有应该生产资源的 tile 编号。
 std::vector<int> Board::getProducingTiles(int roll) const {
     std::vector<int> result;
 
@@ -335,9 +276,7 @@ std::vector<int> Board::getProducingTiles(int roll) const {
     return result;
 }
 
-// Build the fixed default Constructor board layout and reset old board state.
-// 建立固定的默认 Constructor 棋盘布局，并重置旧的 board 状态。
-void Board::setupDefaultBoard(){
+void Board::setupDefaultBoard() {
     clear();
 
     ResourceType resourceTypes[19] = {
@@ -403,11 +342,11 @@ void Board::setupTopology() {
 
     connectTileToVertices(1, {2, 3, 7, 8, 13, 14});
     connectTileToVertices(2, {4, 5, 9, 10, 15, 16});
-    
+
     connectTileToVertices(3, {6, 7, 12, 13, 18, 19});
     connectTileToVertices(4, {8, 9, 14, 15, 20, 21});
     connectTileToVertices(5, {10, 11, 16, 17, 22, 23});
-    
+
     connectTileToVertices(6, {13, 14, 19, 20, 25, 26});
     connectTileToVertices(7, {15, 16, 21, 22, 27, 28});
 
@@ -421,7 +360,7 @@ void Board::setupTopology() {
     connectTileToVertices(13, {30, 31, 36, 37, 42, 43});
     connectTileToVertices(14, {32, 33, 38, 39, 44, 45});
     connectTileToVertices(15, {34, 35, 40, 41, 46, 47});
-    
+
     connectTileToVertices(16, {37, 38, 43, 44, 48, 49});
     connectTileToVertices(17, {39, 40, 45, 46, 50, 51});
 
@@ -520,8 +459,6 @@ void Board::setupTopology() {
     connectEdgeToVertices(71, 52, 53);
 }
 
-// Convert one dice roll into production records without directly mutating builders.
-// 把一次掷骰结果转换成 production records，但不直接修改 builder。
 std::vector<Production> Board::getProduction(int roll) const {
     std::vector<Production> result;
 
@@ -554,8 +491,6 @@ std::vector<Production> Board::getProduction(int roll) const {
     return result;
 }
 
-// Find which tile currently contains the geese.
-// 找出当前哪一个 tile 上有 geese。
 int Board::getGeeseTile() const {
     for (const Tile &tile : tiles) {
         if (tile.hasGeeseOnTile()) {
@@ -565,8 +500,6 @@ int Board::getGeeseTile() const {
     return -1;
 }
 
-// Check whether geese are allowed to move onto the target tile.
-// 检查 geese 是否允许移动到目标 tile。
 bool Board::canMoveGeeseTo(int tileId) const {
     if (tileId < 0 || tileId >= static_cast<int>(tiles.size())) {
         return false;
@@ -575,23 +508,21 @@ bool Board::canMoveGeeseTo(int tileId) const {
     if (tileId == getGeeseTile()) {
         return false;
     }
-    
+
     return true;
 }
 
-// Move geese from their current tile onto a new target tile.
-// 把 geese 从当前 tile 移动到新的目标 tile。
 void Board::moveGeeseTo(int tileId) {
     if (!canMoveGeeseTo(tileId)) {
         return;
     }
-    
+
     int currentGeeseTile = getGeeseTile();
-    
+
     if (currentGeeseTile != -1) {
         tiles[currentGeeseTile].removeGeese();
     }
-    
+
     tiles[tileId].placeGeese();
 }
 
@@ -602,8 +533,7 @@ void Board::setTile(
 ) {
     if (id < static_cast<int>(tiles.size())) {
         tiles[id] = Tile{id, type, number};
-    } else if (id ==
-               static_cast<int>(tiles.size())) {
+    } else if (id == static_cast<int>(tiles.size())) {
         addTile(type, number);
     }
 }

@@ -18,22 +18,11 @@ export class Board {
     std::vector<Tile> tiles;
     std::vector<Vertex> vertices;
     std::vector<Edge> edges;
-
-    // Edge -> Vertices
     std::vector<std::vector<int>> edgeVertices;
-
-    // Vertex -> Edges
     std::vector<std::vector<int>> vertexEdges;
-
-    // Vertex -> adjacent Vertices
     std::vector<std::vector<int>> vertexNeighbours;
-
-    // Tile -> Vertices
     std::vector<std::vector<int>> tileVertices;
-
-    // Vertex -> Tiles
     std::vector<std::vector<int>> vertexTiles;
-
     std::vector<Residence *> residences;
 
   public:
